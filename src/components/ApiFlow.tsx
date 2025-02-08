@@ -28,46 +28,37 @@ import { FlowControlsDock } from "./FlowControlsDock";
 import HttpRequestNode from "./nodes/HttpRequestNode";
 import { NodeData, NodeType } from "../types";
 import { X } from "lucide-react";
+import HttpResponceNode from "./nodes/HttpResponceNode";
 
 
 
-const ResponseNode = ({ data }: { data: any }) => (
-  <Card className="min-w-[300px] max-w-[400px] bg-white border text-foreground dark:bg-gray-900">
-    <Handle type="target" position={Position.Top} className="w-2 h-2" />
-    <div className="p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <Badge variant="outline">Response</Badge>
-        <Badge variant={data.status < 400 ? "default" : "destructive"}>
-          {data.status}
-        </Badge>
-      </div>
-      <ScrollArea className="h-[200px] w-full rounded-md border p-2">
-        <pre className="text-xs">{JSON.stringify(data.response, null, 2)}</pre>
-      </ScrollArea>
-    </div>
-    <Handle type="source" position={Position.Bottom} className="w-2 h-2" />
-  </Card>
-);
+// const ResponseNode = ({ data }: { data: any }) => {
+ 
+
+//   return (
+//   <Card className="min-w-[300px] max-w-[400px] bg-white border text-foreground dark:bg-gray-900">
+//     <Handle type="target" position={Position.Top} className="w-2 h-2" />
+//     <div className="p-4 space-y-4">
+//       <div className="flex items-center justify-between">
+//         <Badge variant="outline">Response</Badge>
+//         <Badge variant={data.status < 400 ? "default" : "destructive"}>
+//           {data.status}
+//         </Badge>
+//       </div>
+//       <ScrollArea className="h-[200px] w-full rounded-md border p-2">
+//         <pre className="text-xs">{JSON.stringify(data.response, null, 2)}</pre>
+//       </ScrollArea>
+//     </div>
+//     <Handle type="source" position={Position.Bottom} className="w-2 h-2" />
+//   </Card>
+// )};
 
 const nodeTypes: NodeTypes = {
   httpRequest: HttpRequestNode,
-  response: ResponseNode,
+  response: HttpResponceNode,
 };
 
-const initialNodes: Node[] = [
-  {
-    id: "1",
-    type: "httpRequest",
-    position: { x: 100, y: 100 },
-    data: {
-      method: "GET",
-      endpoint: "https://potterapi-fedeperin.vercel.app/en/books",
-      params: {},
-      body: {},
-      headers: {},
-    },
-  },
-];
+const initialNodes: Node[] = [];
 
 const NODE_TYPES: NodeType[] = [
   {
@@ -75,7 +66,7 @@ const NODE_TYPES: NodeType[] = [
     label: "HTTP Request",
     data: {
       method: "GET",
-      endpoint: "https://api.example.com/endpoint",
+      endpoint: "https://dummyjson.com/quotes/random",
       params: {},
       body: {},
       headers: {},
@@ -161,9 +152,6 @@ export default function ApiFlow() {
     },
     [setNodes, setEdges]
   );
-    useEffect(() => {
-      console.log(selectedNode)
-    },[selectedNode])
   return (
     <div className="w-full h-screen bg-white" ref={reactFlowWrapper}>
       <ContextMenu >
@@ -222,7 +210,7 @@ export default function ApiFlow() {
                   <button
                     key={nodeType.type}
                     className="w-full text-left px-3 py-2 text-sm rounded-md transition-colors 
-                    hover:bg-muted dark:hover:bg-gray-700"
+                    hover:bg-muted dark:hover:bg-gray-700 flex dark:text-gray-300"
                     onClick={() => addNode(nodeType.type)}
                   >
                     {nodeType.label}
