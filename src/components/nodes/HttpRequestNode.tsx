@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Handle, Position } from "reactflow";
+import { Handle, Position, useReactFlow } from "reactflow";
 import { Edit, Save } from "lucide-react";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
@@ -40,6 +40,8 @@ export default function HttpRequestNode({
   const [lastResponse, setLastResponse] = useState<ApiResponse | undefined>(
     data.lastResponse
   );
+  const { setEdges } = useReactFlow();
+
 
   const handleSave = () => {
     data.onSave(id, editData);
@@ -48,6 +50,12 @@ export default function HttpRequestNode({
 
   const executeRequest = async () => {
     setIsLoading(true);
+    // First reset all animations
+      setEdges((eds) =>
+      eds.map((edge) =>
+        edge.source === id ? { ...edge, animated: false } : edge
+      )
+    );
     try {
       let request;
 
@@ -76,12 +84,37 @@ export default function HttpRequestNode({
 
       setLastResponse(response);
       data.lastResponse = response;
+      if (response.success) {
+        setEdges((eds) =>
+          eds.map((edge) =>
+            edge.source === id && edge.sourceHandle === "success"
+              ? { ...edge, animated: true }
+              : edge
+          )
+        );
+      } else {
+        // Handle API-level failures
+        setEdges((eds) =>
+          eds.map((edge) =>
+            edge.source === id && edge.sourceHandle === "failure"
+              ? { ...edge, animated: true }
+              : edge
+          )
+        );
+      }
     } catch (error) {
       setLastResponse({
         success: false,
         error: "Request failed",
         status: 500,
       });
+      setEdges((eds) =>
+        eds.map((edge) =>
+          edge.source === id && edge.sourceHandle === "failure"
+            ? { ...edge, animated: true }
+            : edge
+        )
+      );
     } finally {
       setIsLoading(false);
     }

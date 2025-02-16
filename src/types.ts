@@ -15,8 +15,23 @@ export interface ApiResponseNodeData {
   latency?: number
   error?: string
 }
+export interface GrabValueNodeData {
+  key: string
+  id: string
+}
 
-export type NodeData = HttpRequestNodeData | ApiResponseNodeData
+export type NodeData = HttpRequestNodeData | ApiResponseNodeData | GrabValueNodeData
+
+export interface FlowNode extends Node {
+  data: NodeData
+}
+
+export interface NodeType {
+  type: string
+  label: string
+  data: NodeData
+}
+
 
 export interface FlowNode extends Node {
   data: NodeData

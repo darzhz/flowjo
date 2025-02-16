@@ -29,33 +29,11 @@ import HttpRequestNode from "./nodes/HttpRequestNode";
 import { NodeData, NodeType } from "../types";
 import { X } from "lucide-react";
 import HttpResponceNode from "./nodes/HttpResponceNode";
-
-
-
-// const ResponseNode = ({ data }: { data: any }) => {
- 
-
-//   return (
-//   <Card className="min-w-[300px] max-w-[400px] bg-white border text-foreground dark:bg-gray-900">
-//     <Handle type="target" position={Position.Top} className="w-2 h-2" />
-//     <div className="p-4 space-y-4">
-//       <div className="flex items-center justify-between">
-//         <Badge variant="outline">Response</Badge>
-//         <Badge variant={data.status < 400 ? "default" : "destructive"}>
-//           {data.status}
-//         </Badge>
-//       </div>
-//       <ScrollArea className="h-[200px] w-full rounded-md border p-2">
-//         <pre className="text-xs">{JSON.stringify(data.response, null, 2)}</pre>
-//       </ScrollArea>
-//     </div>
-//     <Handle type="source" position={Position.Bottom} className="w-2 h-2" />
-//   </Card>
-// )};
-
+import GrabValueNode from "./nodes/GrabValueNode";
 const nodeTypes: NodeTypes = {
   httpRequest: HttpRequestNode,
   response: HttpResponceNode,
+  grabber:GrabValueNode,
 };
 
 const initialNodes: Node[] = [];
@@ -81,6 +59,14 @@ const NODE_TYPES: NodeType[] = [
       response: { message: "Waiting for response..." },
     },
   },
+  {
+    type: "grabber",
+    label: "Grab Value",
+    data: {
+      key: "",
+      id: "",
+    }
+  },
 ];
 
 export default function ApiFlow() {
@@ -92,8 +78,18 @@ export default function ApiFlow() {
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
 
   const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges]
+    (params: Connection) => {
+      setEdges((eds) => {  
+        return addEdge(
+          {
+            ...params,
+            style: { stroke: params.sourceHandle === "success" ? "#00cc66" : "#ff4444" }, // Green for success, Red for failure
+          },
+          eds
+        );
+      });
+    },
+    [setEdges, nodes]
   );
 
   const onContextMenu = useCallback(

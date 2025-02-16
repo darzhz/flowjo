@@ -1,4 +1,4 @@
-import { Handle, Position, useEdges, useNodes } from "reactflow";
+import { Handle, Position, useEdges, useNodes, useReactFlow } from "reactflow";
 import { useEffect, useState } from "react";
 import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
@@ -10,33 +10,59 @@ interface ResponseNodeData {
   id: string;
 }
 
-export default function HttpResponseNode({ data, id }: { data: ResponseNodeData; id: string }) {
+export default function HttpResponseNode({
+  data,
+  id,
+}: {
+  data: ResponseNodeData;
+  id: string;
+}) {
+  const { setEdges } = useReactFlow();
   const edges = useEdges();
   const nodes = useNodes();
   const [response, setResponse] = useState<ApiResponse | undefined>(undefined);
 
   // Find the source node that's connected to this response node
-  const sourceEdge = edges.find(edge => edge.target === id);
-  const sourceNode = sourceEdge ? nodes.find(node => node.id === sourceEdge.source) : null;
+  const sourceEdge = edges.find((edge) => edge.target === id);
+  const sourceNode = sourceEdge
+    ? nodes.find((node) => node.id === sourceEdge.source)
+    : null;
 
-  useEffect(() => {
-    const sourceData = sourceNode?.data as HttpRequestNodeData | undefined;
-    const response = sourceData?.lastResponse;
-    if(sourceEdge?.sourceHandle === "success" && response?.success){
-      setResponse(response);
-    }
-    if(sourceEdge?.sourceHandle === "failure" && !response?.success){
-      setResponse(response);
-    }
-  }, [sourceEdge, sourceNode]);
+    useEffect(() => {
+      if (!sourceEdge || !sourceNode) return;
+    
+      const sourceData = sourceNode.data as HttpRequestNodeData | undefined;
+      const response = sourceData?.lastResponse;
+      const isSuccess = sourceEdge.sourceHandle === "success";
+      const isFailure = sourceEdge.sourceHandle === "failure";
+      const isResponseSuccessful = response?.success ?? false;
+    
+      if (isSuccess && isResponseSuccessful) {
+        setResponse(response);
+      } else if (isFailure && !isResponseSuccessful) {
+        setResponse(response);
+      } else {
+        setResponse(undefined);
+      }    
+    }, [sourceEdge?.id, sourceEdge?.sourceHandle, JSON.stringify(sourceNode?.data), setEdges]);
+    
+    
 
   const hasResponse = !!response;
   const isSuccess = response?.success ?? false;
   const status = response?.status ?? 0;
 
   return (
-    <Card key={id} className="min-w-[300px] max-w-[400px] bg-white border text-foreground dark:bg-gray-900 dark:text-gray-300">
-      <Handle type="target" position={Position.Top} className="w-2 h-2" style={{width:"10px",height:"10px"}} />
+    <Card
+      key={id}
+      className="min-w-[300px] max-w-[400px] bg-white border text-foreground dark:bg-gray-900 dark:text-gray-300"
+    >
+      <Handle
+        type="target"
+        position={Position.Top}
+        className="w-2 h-2"
+        style={{ width: "10px", height: "10px" }}
+      />
       <div className="p-4 space-y-4">
         <div className="flex items-center justify-between">
           <Badge variant="outline">Response</Badge>
@@ -75,7 +101,13 @@ export default function HttpResponseNode({ data, id }: { data: ResponseNodeData;
           )}
         </ScrollArea>
       </div>
-      <Handle type="source" position={Position.Bottom} className="w-2 h-2" style={{width:"10px",height:"10px"}}/>
+      <Handle
+        type="source"
+        id="output"
+        position={Position.Bottom}
+        className="w-2 h-2"
+        style={{ width: "10px", height: "10px" }}
+      />
     </Card>
   );
 }
