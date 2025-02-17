@@ -122,7 +122,7 @@ export default function HttpRequestNode({
 
   if (isEditing) {
     return (
-      <Card className="min-w-[350px] max-w-lg p-6 bg-white border border-gray-300 shadow-lg dark:bg-gray-900 dark:border-gray-700 dark:text-gray-300">
+      <Card className="min-w-[350px] max-w-lg p-6 bg-white  border-gray-300 shadow-lg dark:bg-gray-900 dark:border-gray-700 dark:text-gray-300">
         <div className="space-y-5">
           <div className="grid gap-2">
             <label className="text-sm font-medium">HTTP Method</label>
@@ -239,7 +239,7 @@ export default function HttpRequestNode({
   }
 
   return (
-    <Card className="min-w-[300px] bg-white border-border dark:border-gray-700 text-foreground dark:bg-gray-900 dark:text-gray-300">
+    <Card className="min-w-[300px] bg-white dark:border-gray-700 text-foreground dark:bg-gray-900 dark:text-gray-300">
       <Handle type="target" position={Position.Top} className="w-8 h-8" style={{width:"10px",height:"10px"}} />
       <div className="p-4 space-y-4">
         <div className="flex items-center justify-between">

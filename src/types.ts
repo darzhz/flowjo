@@ -15,23 +15,14 @@ export interface ApiResponseNodeData {
   latency?: number
   error?: string
 }
-export interface GrabValueNodeData {
-  key: string
-  id: string
+export interface ValueSelector {
+  selectedValue?:any
+}
+export interface conditional {
+  input?:any
 }
 
-export type NodeData = HttpRequestNodeData | ApiResponseNodeData | GrabValueNodeData
-
-export interface FlowNode extends Node {
-  data: NodeData
-}
-
-export interface NodeType {
-  type: string
-  label: string
-  data: NodeData
-}
-
+export type NodeData = HttpRequestNodeData | ApiResponseNodeData | ValueSelector | conditional
 
 export interface FlowNode extends Node {
   data: NodeData

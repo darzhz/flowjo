@@ -8,6 +8,8 @@ import { HttpRequestNodeData } from "./HttpRequestNode";
 
 interface ResponseNodeData {
   id: string;
+  status?: number,
+  response?: ApiResponse,
 }
 
 export default function HttpResponseNode({
@@ -28,41 +30,26 @@ export default function HttpResponseNode({
     ? nodes.find((node) => node.id === sourceEdge.source)
     : null;
 
-    useEffect(() => {
-      if (!sourceEdge || !sourceNode) return;
-    
-      const sourceData = sourceNode.data as HttpRequestNodeData | undefined;
-      const response = sourceData?.lastResponse;
-      const isSuccess = sourceEdge.sourceHandle === "success";
-      const isFailure = sourceEdge.sourceHandle === "failure";
-      const isResponseSuccessful = response?.success ?? false;
-    
-      if (isSuccess && isResponseSuccessful) {
-        setResponse(response);
-      } else if (isFailure && !isResponseSuccessful) {
-        setResponse(response);
-      } else {
-        setResponse(undefined);
-      }    
-    }, [sourceEdge?.id, sourceEdge?.sourceHandle, JSON.stringify(sourceNode?.data), setEdges]);
-    
-    
+  useEffect(() => {
+    const sourceData = sourceNode?.data as HttpRequestNodeData | undefined;
+    const response = sourceData?.lastResponse;
+    if(sourceEdge?.sourceHandle === "success" && response?.success){
+      setResponse(response);
+      data.response = response;
+    }
+    if(sourceEdge?.sourceHandle === "failure" && !response?.success){
+      setResponse(response);
+      data.response = response;
+    }
+  }, [sourceEdge, sourceNode]);
 
   const hasResponse = !!response;
   const isSuccess = response?.success ?? false;
   const status = response?.status ?? 0;
 
   return (
-    <Card
-      key={id}
-      className="min-w-[300px] max-w-[400px] bg-white border text-foreground dark:bg-gray-900 dark:text-gray-300"
-    >
-      <Handle
-        type="target"
-        position={Position.Top}
-        className="w-2 h-2"
-        style={{ width: "10px", height: "10px" }}
-      />
+    <Card key={id} className="min-w-[300px] max-w-[400px] bg-white  text-foreground dark:bg-gray-900 dark:text-gray-300">
+      <Handle type="target" position={Position.Top} className="w-2 h-2" style={{width:"10px",height:"10px"}} />
       <div className="p-4 space-y-4">
         <div className="flex items-center justify-between">
           <Badge variant="outline">Response</Badge>
@@ -74,7 +61,7 @@ export default function HttpResponseNode({
             <Badge variant="outline">Waiting...</Badge>
           )}
         </div>
-        <ScrollArea className="h-[200px] w-full rounded-md border p-2">
+        <ScrollArea className="h-[200px] w-full rounded-md  p-2">
           {hasResponse ? (
             <div className="space-y-2">
               <div className="flex justify-between text-xs text-muted-foreground">

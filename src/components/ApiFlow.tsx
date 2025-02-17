@@ -29,11 +29,39 @@ import HttpRequestNode from "./nodes/HttpRequestNode";
 import { NodeData, NodeType } from "../types";
 import { X } from "lucide-react";
 import HttpResponceNode from "./nodes/HttpResponceNode";
-import GrabValueNode from "./nodes/GrabValueNode";
+import ValueSelector from "./nodes/ValueSelector";
+import ConditionalNode from "./nodes/ConditionalNode";
+import DebugNode from "./nodes/DebugNode";
+
+
+
+// const ResponseNode = ({ data }: { data: any }) => {
+ 
+
+//   return (
+//   <Card className="min-w-[300px] max-w-[400px] bg-white border text-foreground dark:bg-gray-900">
+//     <Handle type="target" position={Position.Top} className="w-2 h-2" />
+//     <div className="p-4 space-y-4">
+//       <div className="flex items-center justify-between">
+//         <Badge variant="outline">Response</Badge>
+//         <Badge variant={data.status < 400 ? "default" : "destructive"}>
+//           {data.status}
+//         </Badge>
+//       </div>
+//       <ScrollArea className="h-[200px] w-full rounded-md border p-2">
+//         <pre className="text-xs">{JSON.stringify(data.response, null, 2)}</pre>
+//       </ScrollArea>
+//     </div>
+//     <Handle type="source" position={Position.Bottom} className="w-2 h-2" />
+//   </Card>
+// )};
+
 const nodeTypes: NodeTypes = {
   httpRequest: HttpRequestNode,
   response: HttpResponceNode,
-  grabber:GrabValueNode,
+  valueselector:ValueSelector,
+  condition:ConditionalNode,
+  debug:DebugNode,
 };
 
 const initialNodes: Node[] = [];
@@ -60,13 +88,26 @@ const NODE_TYPES: NodeType[] = [
     },
   },
   {
-    type: "grabber",
-    label: "Grab Value",
+    type: "valueselector",
+    label: "Value Selector",
     data: {
-      key: "",
-      id: "",
+      selectedValue:"",
+    },
+  },
+  {
+    type:"condition",
+    label:"Conditional Logic",
+    data:{
+      input:""
     }
   },
+  {
+    type:"debug",
+    label:"Debug Node",
+    data:{
+      input:""
+    }
+  }
 ];
 
 export default function ApiFlow() {
