@@ -11,6 +11,7 @@ import ReactFlow, {
   Handle,
   Position,
   type XYPosition,
+  ConnectionMode,
 } from "reactflow";
 
 import { Card } from "../components/ui/card";
@@ -120,18 +121,26 @@ export default function ApiFlow() {
 
   const onConnect = useCallback(
     (params: Connection) => {
-      setEdges((eds) => {  
-        return addEdge(
-          {
-            ...params,
-            style: { stroke: params.sourceHandle === "success" ? "#00cc66" : "#ff4444" }, // Green for success, Red for failure
-          },
-          eds
-        );
-      });
+      const { source, target } = params;
+      const sourceNode = nodes.find((node) => node.id === params.source);
+      const targetNode = nodes.find((node) => node.id === params.target);
+      console.log(sourceNode,targetNode);
+      // Make sure the connection is from source to target, you can add more rules here
+      if (source && target) {
+        setEdges((eds) => {
+          return addEdge(
+            {
+              ...params,
+              style: { stroke: params.sourceHandle === "success" ? "#00cc66" : "#ff4444" }, // Green for success, Red for failure
+            },
+            eds
+          );
+        });
+      }
     },
-    [setEdges, nodes]
+    [setEdges]
   );
+  
 
   const onContextMenu = useCallback(
     (event: React.MouseEvent) => {
@@ -206,6 +215,7 @@ export default function ApiFlow() {
               event.preventDefault();
               setSelectedNode(node.id);
             }}
+            connectionMode={ConnectionMode.Strict}
             fitView
           >
             <div className="fixed z-50 flex items-center justify-center bottom-0 w-full">

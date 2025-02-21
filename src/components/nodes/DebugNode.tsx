@@ -1,21 +1,20 @@
 import { Handle, Position, useEdges, useNodes, } from "reactflow";
 import { Card, CardContent, CardHeader } from "../ui/card";
 import { Badge } from "../ui/badge";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 export default function DebugNode({ id, data }: { id: string, data: any }){
     const edges = useEdges();
     const nodes = useNodes();
     const incomingEdges = edges.filter(edge => edge.target === id);
     const [isConnectable,setIsConnectable] = useState(true);
     const parentNode = incomingEdges.length > 0 ? nodes.find(node => node.id === incomingEdges[0].source) : null;
-    const onConnect = () => {
-        if(incomingEdges.length>1){
-            setIsConnectable(false)
-        }
-      };
+    const onConnect = useCallback(() => {
+        console.log('onConnect');
+        
+      }, []);
 
 
-    console.log(id,incomingEdges);
+    //console.log(id,incomingEdges);
     return(
         <Card className="bg-white shadow text-foreground dark:bg-gray-900 dark:text-gray-300">
             <Handle type="target" position={Position.Left} className="w-2 h-2" style={{ width: "10px", height: "10px" }} onConnect={onConnect} />
