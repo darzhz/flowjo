@@ -19,10 +19,13 @@ export interface ValueSelector {
   selectedValue?:any
 }
 export interface conditional {
+  istrue?:boolean|null
+}
+export interface Debug {
   input?:any
 }
 
-export type NodeData = HttpRequestNodeData | ApiResponseNodeData | ValueSelector | conditional
+export type NodeData = HttpRequestNodeData | ApiResponseNodeData | ValueSelector | conditional | Debug
 
 export interface FlowNode extends Node {
   data: NodeData

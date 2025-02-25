@@ -27,11 +27,9 @@ export default function ValueSelector({ id, data }: { id: string, data: any }) {
     // Set Json data
     const Sdata = (sourceNode?.data as any)?.response?.data;
     setJsonData(Sdata);
-    console.log("current",currentNode);
-    console.log("parent",sourceNode);
     if(selectedKey !== null && sourceNode?.data)
         data.selectedValue = Sdata[selectedKey];
-  }, [JSON.stringify(sourceNode?.data)]);
+  }, [JSON.stringify(sourceNode?.data),selectedKey]);
 
   const handleSelectionChange = (selected: string) => {
     setSelectedKey(selected);

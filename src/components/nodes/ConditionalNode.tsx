@@ -39,15 +39,19 @@ export default function ConditionalNode({ id, data }: { id: string, data: any })
       switch (selectedCondition) {
         case 'greaterThan':
           setConditionResult(value1 > value2);
+          data.istrue = value1 > value2
           break;
         case 'lessThan':
           setConditionResult(value1 < value2);
+          data.istrue = value1 < value2
           break;
         case 'equal':
           setConditionResult(value1 === value2);
+          data.istrue = value1 === value2
           break;
         default:
           setConditionResult(null); // Invalid condition
+          data.istrue = null
           break;
       }
     }
@@ -91,7 +95,7 @@ export default function ConditionalNode({ id, data }: { id: string, data: any })
       {/* True/False Handles with Labels */}
       <Handle
         type="source"
-        id={conditionResult == true?"true":"false"}
+        id="false"
         position={Position.Right}
         className="w-2 h-2"
         style={{
@@ -100,21 +104,21 @@ export default function ConditionalNode({ id, data }: { id: string, data: any })
           borderColor: conditionResult === true ? 'green' : (conditionResult === null ? 'gray' : 'red'),
         }}
       >
-        {conditionResult === true && <span className="absolute text-xs top-[-3px] right-4 rotate-270">True</span>}
+        {conditionResult === false && <span className="absolute text-xs top-[-3px] right-4 rotate-270">False</span>}
       </Handle>
 
       <Handle
         type="source"
-        id={conditionResult != true?"true":"false"}
+        id="true"
         position={Position.Bottom}
         className="w-2 h-2"
         style={{
           width: "10px",
           height: "10px",
-          borderColor: conditionResult === false ? 'green' : (conditionResult === null ? 'gray' : 'red'),
+          borderColor: conditionResult === true ? 'green' : (conditionResult === null ? 'gray' : 'red'),
         }}
       >
-        {conditionResult === false && <span className="absolute text-xs bottom-3 left-[-10px]">False</span>}
+        {conditionResult === true && <span className="absolute text-xs bottom-3 left-[-10px]">True</span>}
       </Handle>
     </Card>
   );

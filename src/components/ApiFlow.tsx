@@ -99,7 +99,7 @@ const NODE_TYPES: NodeType[] = [
     type:"condition",
     label:"Conditional Logic",
     data:{
-      input:""
+      istrue:null
     }
   },
   {

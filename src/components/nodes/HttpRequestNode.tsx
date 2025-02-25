@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Handle, Position, useReactFlow } from "reactflow";
+import { useEffect, useState } from "react";
+import { Handle, Position, useEdges, useNodes, useReactFlow } from "reactflow";
 import { Edit, Save } from "lucide-react";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
@@ -40,18 +40,42 @@ export default function HttpRequestNode({
   const [lastResponse, setLastResponse] = useState<ApiResponse | undefined>(
     data.lastResponse
   );
-  const { setEdges } = useReactFlow();
+  const edges = useEdges();
+  const nodes = useNodes();
+  const [parentData, setParentData] = useState<any>(null);
+  const [parentHandleId, setParentHandleId] = useState<string>('');
+  const incomingEdges = edges.filter(edge => edge.target === id);
+  const parentNode:any = incomingEdges.length > 0 ? nodes.find(node => node.id === incomingEdges[0].source) : null;
+  useEffect(() => {
+    if (incomingEdges.length > 0) {
+      const parentEdge = incomingEdges[0]; // Assuming there's only one incoming edge for simplicity
+      const handleId = parentEdge?.sourceHandle; // Get the handle id from the parent node's edge
+      setParentHandleId(handleId || ''); // Update state with the handle id
+    }
+  }, [incomingEdges, id]);
 
+  useEffect(() => {
+    setParentData(parentNode?.data)
+  }, [parentNode]);
 
   const handleSave = () => {
     data.onSave(id, editData);
     setIsEditing(false);
   };
+  const { setEdges } = useReactFlow();
+
+  useEffect(() => {
+    console.log(parentData,parentHandleId);
+    if(parentData?.istrue && parentHandleId == "true"){
+      executeRequest();
+      console.log("called");
+    }
+  },[parentNode])
 
   const executeRequest = async () => {
     setIsLoading(true);
     // First reset all animations
-      setEdges((eds) =>
+    setEdges((eds) =>
       eds.map((edge) =>
         edge.source === id ? { ...edge, animated: false } : edge
       )
@@ -185,7 +209,7 @@ export default function HttpRequestNode({
                     ...editData,
                     params: JSON.parse(e.target.value),
                   });
-                } catch {}
+                } catch { }
               }}
               placeholder="Enter query parameters"
               className="dark:bg-gray-800 dark:border-gray-600"
@@ -202,7 +226,7 @@ export default function HttpRequestNode({
                     ...editData,
                     body: JSON.parse(e.target.value),
                   });
-                } catch {}
+                } catch { }
               }}
               placeholder="Enter request body"
               className="dark:bg-gray-800 dark:border-gray-600"
@@ -219,7 +243,7 @@ export default function HttpRequestNode({
                     ...editData,
                     headers: JSON.parse(e.target.value),
                   });
-                } catch {}
+                } catch { }
               }}
               placeholder="Enter headers"
               className="dark:bg-gray-800 dark:border-gray-600"
@@ -240,7 +264,7 @@ export default function HttpRequestNode({
 
   return (
     <Card className="min-w-[300px] bg-white dark:border-gray-700 text-foreground dark:bg-gray-900 dark:text-gray-300">
-      <Handle type="target" position={Position.Top} className="w-8 h-8" style={{width:"10px",height:"10px"}} />
+      <Handle type="target" position={Position.Top} className="w-8 h-8" style={{ width: "10px", height: "10px" }} />
       <div className="p-4 space-y-4">
         <div className="flex items-center justify-between">
           <Badge variant="outline" className="bg-primary/10 text-primary">
@@ -289,14 +313,14 @@ export default function HttpRequestNode({
         position={Position.Bottom}
         id="success"
         className="w-8 h-8 !bg-green-500"
-        style={{left: "30%",width:"10px",height:"10px"}}
+        style={{ left: "30%", width: "10px", height: "10px" }}
       />
       <Handle
         type="source"
         position={Position.Bottom}
         id="failure"
         className="w-8 h-8 !bg-red-500"
-        style={{ left: "70%",width:"10px",height:"10px" }}
+        style={{ left: "70%", width: "10px", height: "10px" }}
       />
     </Card>
   );
