@@ -1,0 +1,61 @@
+{
+  "nodes": [
+    {
+      "id": "node_1768851862296",
+      "type": "start",
+      "data": {
+        "label": "Start"
+      }
+    },
+    {
+      "id": "node_1768851872575",
+      "type": "httpRequest",
+      "data": {
+        "body": {},
+        "endpoint": "https://dummyjson.com/quotes/random",
+        "headers": {},
+        "method": "GET",
+        "params": {}
+      }
+    },
+    {
+      "id": "node_1768851901931",
+      "type": "display",
+      "data": {
+        "input": {
+          "author": "Rumi",
+          "id": 1450,
+          "quote": "The breeze at dawn has secrets to tell you. Don't go back to sleep."
+        }
+      }
+    },
+    {
+      "id": "node_1768851933771",
+      "type": "caseSuccess",
+      "data": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "reactflow__edge-node_1768851862296-node_1768851872575",
+      "source": "node_1768851862296",
+      "target": "node_1768851872575",
+      "sourceHandle": null,
+      "targetHandle": null
+    },
+    {
+      "id": "reactflow__edge-node_1768851872575success-node_1768851901931",
+      "source": "node_1768851872575",
+      "target": "node_1768851901931",
+      "sourceHandle": "success",
+      "targetHandle": null
+    },
+    {
+      "id": "reactflow__edge-node_1768851872575success-node_1768851933771",
+      "source": "node_1768851872575",
+      "target": "node_1768851933771",
+      "sourceHandle": "success",
+      "targetHandle": null
+    }
+  ]
+}

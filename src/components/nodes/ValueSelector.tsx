@@ -1,7 +1,6 @@
 import { Handle, Position, useEdges, useNodes } from "reactflow";
 import { Card, CardContent, CardHeader } from "../ui/card";
 import { useState, useEffect } from "react";
-import { NodeData } from "../../types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 export default function ValueSelector({ id, data }: { id: string, data: any }) {
@@ -13,7 +12,7 @@ export default function ValueSelector({ id, data }: { id: string, data: any }) {
   // Find the source node connected to this value selector component
   const sourceEdge = edges.find(edge => edge.target === id);
   const sourceNode = sourceEdge ? nodes.find(node => node.id === sourceEdge.source) : null;
-  const currentNode = nodes.find(node=> node.id === id);
+  const currentNode = nodes.find(node => node.id === id);
 
   useEffect(() => {
     // Fetch the JSON data from the source node when it changes
@@ -27,10 +26,10 @@ export default function ValueSelector({ id, data }: { id: string, data: any }) {
     // Set Json data
     const Sdata = (sourceNode?.data as any)?.response?.data;
     setJsonData(Sdata);
-    console.log("current",currentNode);
-    console.log("parent",sourceNode);
-    if(selectedKey !== null && sourceNode?.data)
-        data.selectedValue = Sdata[selectedKey];
+    console.log("current", currentNode);
+    console.log("parent", sourceNode);
+    if (selectedKey !== null && sourceNode?.data)
+      data.selectedValue = Sdata[selectedKey];
   }, [JSON.stringify(sourceNode?.data)]);
 
   const handleSelectionChange = (selected: string) => {

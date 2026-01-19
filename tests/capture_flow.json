@@ -1,0 +1,53 @@
+{
+    "nodes": [
+        {
+            "id": "1",
+            "type": "input",
+            "data": {
+                "key": "userData",
+                "value": "{\"user\": {\"id\": 1, \"name\": \"Alice\"}}",
+                "type": "json"
+            },
+            "position": {
+                "x": 0,
+                "y": 0
+            }
+        },
+        {
+            "id": "2",
+            "type": "capture",
+            "data": {
+                "path": "user.id",
+                "variable": "userId"
+            },
+            "position": {
+                "x": 200,
+                "y": 0
+            }
+        },
+        {
+            "id": "3",
+            "type": "httpRequest",
+            "data": {
+                "method": "GET",
+                "endpoint": "https://jsonplaceholder.typicode.com/users/{{userId}}"
+            },
+            "position": {
+                "x": 400,
+                "y": 0
+            }
+        }
+    ],
+    "edges": [
+        {
+            "id": "e1-2",
+            "source": "1",
+            "target": "2"
+        },
+        {
+            "id": "e2-3",
+            "source": "2",
+            "target": "3"
+        }
+    ]
+}

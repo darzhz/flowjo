@@ -1,0 +1,37 @@
+{
+    "nodes": [
+        {
+            "id": "input-1",
+            "type": "input",
+            "position": {
+                "x": 0,
+                "y": 0
+            },
+            "data": {
+                "value": "999",
+                "type": "number"
+            }
+        },
+        {
+            "id": "mapper-1",
+            "type": "mapper",
+            "position": {
+                "x": 200,
+                "y": 0
+            },
+            "data": {
+                "mapping": {
+                    "0": "Clear"
+                },
+                "fallback": "Unknown weather condition"
+            }
+        }
+    ],
+    "edges": [
+        {
+            "id": "e1",
+            "source": "input-1",
+            "target": "mapper-1"
+        }
+    ]
+}

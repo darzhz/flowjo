@@ -1,4 +1,4 @@
-import { Handle, Position, useEdges, useNodes, useReactFlow } from "reactflow";
+import { Handle, Position, useEdges, useNodes } from "reactflow";
 import { useEffect, useState } from "react";
 import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
@@ -19,7 +19,6 @@ export default function HttpResponseNode({
   data: ResponseNodeData;
   id: string;
 }) {
-  const { setEdges } = useReactFlow();
   const edges = useEdges();
   const nodes = useNodes();
   const [response, setResponse] = useState<ApiResponse | undefined>(undefined);
@@ -33,11 +32,11 @@ export default function HttpResponseNode({
   useEffect(() => {
     const sourceData = sourceNode?.data as HttpRequestNodeData | undefined;
     const response = sourceData?.lastResponse;
-    if(sourceEdge?.sourceHandle === "success" && response?.success){
+    if (sourceEdge?.sourceHandle === "success" && response?.success) {
       setResponse(response);
       data.response = response;
     }
-    if(sourceEdge?.sourceHandle === "failure" && !response?.success){
+    if (sourceEdge?.sourceHandle === "failure" && !response?.success) {
       setResponse(response);
       data.response = response;
     }
@@ -49,7 +48,7 @@ export default function HttpResponseNode({
 
   return (
     <Card key={id} className="min-w-[300px] max-w-[400px] bg-white  text-foreground dark:bg-gray-900 dark:text-gray-300">
-      <Handle type="target" position={Position.Top} className="w-2 h-2" style={{width:"10px",height:"10px"}} />
+      <Handle type="target" position={Position.Top} className="w-2 h-2" style={{ width: "10px", height: "10px" }} />
       <div className="p-4 space-y-4">
         <div className="flex items-center justify-between">
           <Badge variant="outline">Response</Badge>

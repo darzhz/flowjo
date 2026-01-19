@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
+default-run = "flowjo"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -22,4 +23,9 @@ tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+reqwest = { version = "0.13.1", features = ["json", "blocking"] }
+tokio = { version = "1.49.0", features = ["full"] }
+anyhow = "1.0.100"
+clap = { version = "4.4", features = ["derive"] }
+tauri-plugin-dialog = "2"
 

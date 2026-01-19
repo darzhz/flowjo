@@ -8,14 +8,14 @@ import {
   useSpring,
   useTransform,
 } from "framer-motion";
-import { act, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 export const FloatingDock = ({
   items,
   desktopClassName,
   mobileClassName,
 }: {
-  items: { title: string; icon: React.ReactNode; action?: () => void;  }[];
+  items: { title: string; icon: React.ReactNode; action?: () => void; }[];
   desktopClassName?: string;
   mobileClassName?: string;
 }) => {
@@ -31,7 +31,7 @@ const FloatingDockMobile = ({
   items,
   className,
 }: {
-  items: { title: string; icon: React.ReactNode;   action?: () => void;  }[];
+  items: { title: string; icon: React.ReactNode; action?: () => void; }[];
   className?: string;
 }) => {
   const [open, setOpen] = useState(false);
@@ -60,7 +60,7 @@ const FloatingDockMobile = ({
                 }}
                 transition={{ delay: (items.length - 1 - idx) * 0.05 }}
               >
-                    <button  key={item.title} onClick={item?.action} className="h-10 w-10 rounded-full bg-gray-50 dark:bg-neutral-900 flex items-center justify-center">
+                <button key={item.title} onClick={item?.action} className="h-10 w-10 rounded-full bg-gray-50 dark:bg-neutral-900 flex items-center justify-center">
                   <div className="h-4 w-4">{item.icon}</div>
                 </button>
               </motion.div>
@@ -82,7 +82,7 @@ const FloatingDockDesktop = ({
   items,
   className,
 }: {
-  items: { title: string; icon: React.ReactNode;   action?: () => void;  }[];
+  items: { title: string; icon: React.ReactNode; action?: () => void; }[];
   className?: string;
 }) => {
   let mouseX = useMotionValue(Infinity);
@@ -156,7 +156,8 @@ function IconContainer({
   const [hovered, setHovered] = useState(false);
 
   return (
-    <button onClick={()=>{action && action()
+    <button onClick={() => {
+      action && action()
     }} className="focus:outline-none">
       <motion.div
         ref={ref}

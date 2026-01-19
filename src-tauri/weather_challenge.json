@@ -1,0 +1,107 @@
+{
+    "nodes": [
+        {
+            "id": "start-1",
+            "type": "start",
+            "position": {
+                "x": 0,
+                "y": 250
+            },
+            "data": {
+                "label": "Start"
+            }
+        },
+        {
+            "id": "weather-api",
+            "type": "httpRequest",
+            "position": {
+                "x": 150,
+                "y": 250
+            },
+            "data": {
+                "method": "GET",
+                "endpoint": "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current_weather=true",
+                "headers": {},
+                "body": {}
+            }
+        },
+        {
+            "id": "extract-code",
+            "type": "capture",
+            "position": {
+                "x": 450,
+                "y": 250
+            },
+            "data": {
+                "path": "current_weather.weathercode",
+                "variable": "raw_code"
+            }
+        },
+        {
+            "id": "weather-mapper",
+            "type": "mapper",
+            "position": {
+                "x": 750,
+                "y": 250
+            },
+            "data": {
+                "mapping": {
+                    "0": "Clear sky",
+                    "1": "Mainly clear",
+                    "2": "Partly cloudy",
+                    "3": "Overcast",
+                    "45": "Fog",
+                    "48": "Depositing rime fog",
+                    "51": "Light drizzle",
+                    "53": "Moderate drizzle",
+                    "55": "Dense drizzle",
+                    "61": "Slight rain",
+                    "63": "Moderate rain",
+                    "65": "Heavy rain",
+                    "71": "Slight snow fall",
+                    "73": "Moderate snow fall",
+                    "75": "Heavy snow fall",
+                    "95": "Thunderstorm"
+                },
+                "fallback": "Unknown weather condition"
+            }
+        },
+        {
+            "id": "final-display",
+            "type": "display",
+            "position": {
+                "x": 1050,
+                "y": 250
+            },
+            "data": {
+                "input": "Waiting..."
+            }
+        }
+    ],
+    "edges": [
+        {
+            "id": "e1",
+            "source": "start-1",
+            "target": "weather-api",
+            "animated": true
+        },
+        {
+            "id": "e2",
+            "source": "weather-api",
+            "target": "extract-code",
+            "animated": true
+        },
+        {
+            "id": "e3",
+            "source": "extract-code",
+            "target": "weather-mapper",
+            "animated": true
+        },
+        {
+            "id": "e4",
+            "source": "weather-mapper",
+            "target": "final-display",
+            "animated": true
+        }
+    ]
+}
