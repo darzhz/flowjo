@@ -1,0 +1,196 @@
+{
+    "nodes": [
+        {
+            "id": "start",
+            "type": "start",
+            "position": {
+                "x": 0,
+                "y": 250
+            },
+            "data": {
+                "label": "Start"
+            }
+        },
+        {
+            "id": "reset-counter",
+            "type": "counter",
+            "position": {
+                "x": 150,
+                "y": 250
+            },
+            "data": {
+                "variable": "hot_day_count",
+                "operation": "set",
+                "amount": 0
+            }
+        },
+        {
+            "id": "fetch-weather",
+            "type": "httpRequest",
+            "position": {
+                "x": 400,
+                "y": 250
+            },
+            "data": {
+                "method": "GET",
+                "endpoint": "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&daily=temperature_2m_max&forecast_days=5&timezone=auto",
+                "headers": {},
+                "body": {}
+            }
+        },
+        {
+            "id": "extract-temps",
+            "type": "capture",
+            "position": {
+                "x": 650,
+                "y": 250
+            },
+            "data": {
+                "path": "daily.temperature_2m_max",
+                "variable": "temps_array"
+            }
+        },
+        {
+            "id": "loop-temps",
+            "type": "loop",
+            "position": {
+                "x": 900,
+                "y": 250
+            },
+            "data": {}
+        },
+        {
+            "id": "check-threshold",
+            "type": "condition",
+            "position": {
+                "x": 1150,
+                "y": 150
+            },
+            "data": {
+                "condition": "greaterThan",
+                "targetValue": "35"
+            }
+        },
+        {
+            "id": "inc-counter",
+            "type": "counter",
+            "position": {
+                "x": 1400,
+                "y": 100
+            },
+            "data": {
+                "variable": "hot_day_count",
+                "operation": "increment",
+                "amount": 1
+            }
+        },
+        {
+            "id": "done-input",
+            "type": "input",
+            "position": {
+                "x": 1150,
+                "y": 450
+            },
+            "data": {
+                "key": "dummy",
+                "value": "{{hot_day_count}}",
+                "type": "number"
+            }
+        },
+        {
+            "id": "final-check",
+            "type": "condition",
+            "position": {
+                "x": 1400,
+                "y": 450
+            },
+            "data": {
+                "condition": "greaterThan",
+                "targetValue": "2"
+            }
+        },
+        {
+            "id": "final-display",
+            "type": "display",
+            "position": {
+                "x": 1650,
+                "y": 400
+            },
+            "data": {
+                "input": "Heat Alert: {{heat_alert}} (Count: {{hot_day_count}})"
+            }
+        }
+    ],
+    "edges": [
+        {
+            "id": "e1",
+            "source": "start",
+            "target": "reset-counter",
+            "animated": true
+        },
+        {
+            "id": "e2",
+            "source": "reset-counter",
+            "target": "fetch-weather",
+            "animated": true
+        },
+        {
+            "id": "e3",
+            "source": "fetch-weather",
+            "target": "extract-temps",
+            "animated": true
+        },
+        {
+            "id": "e4",
+            "source": "extract-temps",
+            "target": "loop-temps",
+            "animated": true
+        },
+        {
+            "id": "e5",
+            "source": "loop-temps",
+            "sourceHandle": "body",
+            "target": "check-threshold",
+            "animated": true
+        },
+        {
+            "id": "e6",
+            "source": "check-threshold",
+            "sourceHandle": "true",
+            "target": "inc-counter",
+            "animated": true
+        },
+        {
+            "id": "e7",
+            "source": "inc-counter",
+            "target": "loop-temps",
+            "animated": true
+        },
+        {
+            "id": "e8",
+            "source": "check-threshold",
+            "sourceHandle": "false",
+            "target": "loop-temps",
+            "animated": true
+        },
+        {
+            "id": "e9",
+            "source": "loop-temps",
+            "sourceHandle": "done",
+            "target": "done-input",
+            "animated": true
+        },
+        {
+            "id": "e10",
+            "source": "done-input",
+            "target": "final-check",
+            "animated": true
+        },
+        {
+            "id": "e11",
+            "source": "final-check",
+            "target": "final-display",
+            "animated": true
+        }
+    ]
+}

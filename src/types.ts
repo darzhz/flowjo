@@ -55,6 +55,13 @@ export interface MapperNodeData {
   onSave?: (id: string, newData: MapperNodeData) => void
 }
 
+export interface CounterNodeData {
+  variable: string
+  operation: "increment" | "decrement" | "set"
+  amount: number
+  onSave?: (id: string, newData: CounterNodeData) => void
+}
+
 export type NodeData =
   | HttpRequestNodeData
   | ApiResponseNodeData
@@ -66,6 +73,7 @@ export type NodeData =
   | TabulizeNodeData
   | CaptureNodeData
   | MapperNodeData
+  | CounterNodeData
 
 export interface FlowNode extends Node {
   data: NodeData

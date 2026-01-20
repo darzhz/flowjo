@@ -1,0 +1,360 @@
+{
+  "nodes": [
+    {
+      "id": "start",
+      "type": "start",
+      "position": {
+        "x": -85.7369791666667,
+        "y": 165.43750000000003
+      },
+      "data": {
+        "label": "Start"
+      }
+    },
+    {
+      "id": "reset-counter",
+      "type": "counter",
+      "position": {
+        "x": 92.45052083333334,
+        "y": 273.48958333333337
+      },
+      "data": {
+        "amount": 0,
+        "operation": "set",
+        "variable": "hot_day_count"
+      }
+    },
+    {
+      "id": "fetch-weather",
+      "type": "httpRequest",
+      "position": {
+        "x": 7.7239583333332575,
+        "y": -29.52604166666669
+      },
+      "data": {
+        "body": {},
+        "endpoint": "https://api.open-meteo.com/v1/forecast?latitude=14.52&longitude=71.41&daily=temperature_2m_max&forecast_days=10&timezone=auto",
+        "headers": {},
+        "method": "GET",
+        "params": {}
+      }
+    },
+    {
+      "id": "extract-temps",
+      "type": "capture",
+      "position": {
+        "x": 484.0968480347574,
+        "y": 567.8501916868777
+      },
+      "data": {
+        "path": "daily.temperature_2m_max",
+        "variable": "temps_array"
+      }
+    },
+    {
+      "id": "loop-temps",
+      "type": "loop",
+      "position": {
+        "x": 804.6612341176684,
+        "y": 264.0355573532384
+      },
+      "data": {}
+    },
+    {
+      "id": "check-threshold",
+      "type": "condition",
+      "position": {
+        "x": 1076.0078125,
+        "y": -17.95052083333333
+      },
+      "data": {
+        "condition": "greaterThan",
+        "targetValue": "20"
+      }
+    },
+    {
+      "id": "inc-counter",
+      "type": "counter",
+      "position": {
+        "x": 1523.8449478455266,
+        "y": 77.2118668022645
+      },
+      "data": {
+        "amount": 1,
+        "operation": "increment",
+        "variable": "hot_day_count"
+      }
+    },
+    {
+      "id": "done-input",
+      "type": "input",
+      "position": {
+        "x": 916.2786458333336,
+        "y": 432.3828125
+      },
+      "data": {
+        "key": "dummy",
+        "type": "number",
+        "value": "{{hot_day_count}}"
+      }
+    },
+    {
+      "id": "final-check",
+      "type": "condition",
+      "position": {
+        "x": 1287.25,
+        "y": 515.7708333333334
+      },
+      "data": {
+        "condition": "greaterThan",
+        "targetValue": "2"
+      }
+    },
+    {
+      "id": "final-display",
+      "type": "display",
+      "position": {
+        "x": 1650.0,
+        "y": 400.0
+      },
+      "data": {
+        "input": {
+          "input": 0,
+          "result": false
+        }
+      }
+    },
+    {
+      "id": "node_1768933944671",
+      "type": "display",
+      "position": {
+        "x": 111.76831592275336,
+        "y": 609.0685105398103
+      },
+      "data": {
+        "input": {
+          "daily": {
+            "temperature_2m_max": [
+              1.5,
+              0.9,
+              -2,
+              -4.3,
+              -2.3
+            ],
+            "time": [
+              "2026-01-20",
+              "2026-01-21",
+              "2026-01-22",
+              "2026-01-23",
+              "2026-01-24"
+            ]
+          },
+          "daily_units": {
+            "temperature_2m_max": "°C",
+            "time": "iso8601"
+          },
+          "elevation": 38,
+          "generationtime_ms": 0.255584716796875,
+          "latitude": 52.52,
+          "longitude": 13.419998,
+          "timezone": "Europe/Berlin",
+          "timezone_abbreviation": "GMT+1",
+          "utc_offset_seconds": 3600
+        }
+      }
+    },
+    {
+      "id": "node_1768934368413",
+      "type": "debug",
+      "position": {
+        "x": 908.2861105193996,
+        "y": 741.478583731632
+      },
+      "data": {
+        "input": {
+          "data": [
+            1.5,
+            0.9,
+            -2,
+            -4.3,
+            -2.3
+          ],
+          "variable": "temps_array"
+        }
+      }
+    },
+    {
+      "id": "node_1768934495423",
+      "type": "debug",
+      "position": {
+        "x": 1218.9376772003163,
+        "y": 349.5589426938906
+      },
+      "data": {
+        "input": {
+          "index": 5,
+          "status": "done"
+        }
+      }
+    },
+    {
+      "id": "node_1768934537850",
+      "type": "debug",
+      "position": {
+        "x": 1471.3536535793264,
+        "y": -88.73064288769183
+      },
+      "data": {
+        "input": {
+          "input": 27.1,
+          "result": true
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "start",
+      "target": "reset-counter",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "animated": true,
+      "style": null
+    },
+    {
+      "id": "e2",
+      "source": "reset-counter",
+      "target": "fetch-weather",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "animated": true,
+      "style": null
+    },
+    {
+      "id": "e3",
+      "source": "fetch-weather",
+      "target": "extract-temps",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "animated": false,
+      "style": null
+    },
+    {
+      "id": "e4",
+      "source": "extract-temps",
+      "target": "loop-temps",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "animated": true,
+      "style": null
+    },
+    {
+      "id": "e5",
+      "source": "loop-temps",
+      "target": "check-threshold",
+      "sourceHandle": "body",
+      "targetHandle": null,
+      "animated": true,
+      "style": null
+    },
+    {
+      "id": "e6",
+      "source": "check-threshold",
+      "target": "inc-counter",
+      "sourceHandle": "true",
+      "targetHandle": null,
+      "animated": true,
+      "style": null
+    },
+    {
+      "id": "e7",
+      "source": "inc-counter",
+      "target": "loop-temps",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "animated": true,
+      "style": null
+    },
+    {
+      "id": "e8",
+      "source": "check-threshold",
+      "target": "loop-temps",
+      "sourceHandle": "false",
+      "targetHandle": null,
+      "animated": true,
+      "style": null
+    },
+    {
+      "id": "e9",
+      "source": "loop-temps",
+      "target": "done-input",
+      "sourceHandle": "done",
+      "targetHandle": null,
+      "animated": true,
+      "style": null
+    },
+    {
+      "id": "e10",
+      "source": "done-input",
+      "target": "final-check",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "animated": true,
+      "style": null
+    },
+    {
+      "id": "e11",
+      "source": "final-check",
+      "target": "final-display",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "animated": true,
+      "style": null
+    },
+    {
+      "id": "reactflow__edge-fetch-weathersuccess-node_1768933944671",
+      "source": "fetch-weather",
+      "target": "node_1768933944671",
+      "sourceHandle": "success",
+      "targetHandle": null,
+      "animated": false,
+      "style": {
+        "stroke": "#00cc66"
+      }
+    },
+    {
+      "id": "reactflow__edge-extract-temps-node_1768934368413",
+      "source": "extract-temps",
+      "target": "node_1768934368413",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "animated": false,
+      "style": {
+        "stroke": "#ff4444"
+      }
+    },
+    {
+      "id": "reactflow__edge-loop-tempsbody-node_1768934495423",
+      "source": "loop-temps",
+      "target": "node_1768934495423",
+      "sourceHandle": "body",
+      "targetHandle": null,
+      "animated": false,
+      "style": {
+        "stroke": "#ff4444"
+      }
+    },
+    {
+      "id": "reactflow__edge-check-thresholdtrue-node_1768934537850",
+      "source": "check-threshold",
+      "target": "node_1768934537850",
+      "sourceHandle": "true",
+      "targetHandle": null,
+      "animated": false,
+      "style": {
+        "stroke": "#ff4444"
+      }
+    }
+  ]
+}

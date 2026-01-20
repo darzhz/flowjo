@@ -41,7 +41,7 @@ import LoopNode from "./nodes/LoopNode";
 import CaptureNode from "./nodes/CaptureNode";
 import CaseNode from "./nodes/CaseNode";
 import MapperNode from "./nodes/MapperNode";
-import { EnvironmentManager } from "./EnvironmentManager";
+import CounterNode from "./nodes/CounterNode";
 
 // ...
 
@@ -61,6 +61,7 @@ const nodeTypes: NodeTypes = {
   caseSuccess: CaseNode,
   caseFail: CaseNode,
   mapper: MapperNode,
+  counter: CounterNode,
 };
 
 const initialNodes: Node[] = [];
@@ -131,6 +132,7 @@ const NODE_TYPES: NodeType[] = [
   { type: "caseSuccess", label: "Case Success", data: {} },
   { type: "caseFail", label: "Case Fail", data: {} },
   { type: "mapper", label: "Value Mapper", data: { mapping: {}, fallback: "Unknown" } },
+  { type: "counter", label: "Variable Op", data: { variable: "counter", operation: "increment", amount: 1 } },
 ];
 
 export default function ApiFlow() {
@@ -255,7 +257,6 @@ export default function ApiFlow() {
             >
               <div className="fixed z-50 flex items-center justify-center bottom-0 w-full pointer-events-none">
                 <div className="pointer-events-auto flex gap-2 items-center mb-4">
-                  <EnvironmentManager />
                   <FlowControlsDock onExecutionComplete={setVariables} />
                 </div>
               </div>
@@ -306,6 +307,7 @@ export default function ApiFlow() {
                   <ContextMenuSubContent className="w-48 bg-white dark:bg-gray-900">
                     <ContextMenuItem inset onClick={() => addNode('capture')}>Capture Block</ContextMenuItem>
                     <ContextMenuItem inset onClick={() => addNode('mapper')}>Value Mapper</ContextMenuItem>
+                    <ContextMenuItem inset onClick={() => addNode('counter')}>Variable Op</ContextMenuItem>
                   </ContextMenuSubContent>
                 </ContextMenuSub>
 

@@ -1,0 +1,72 @@
+{
+    "nodes": [
+        {
+            "id": "start",
+            "type": "start",
+            "position": {
+                "x": 0,
+                "y": 0
+            },
+            "data": {
+                "label": "Start"
+            }
+        },
+        {
+            "id": "input-data",
+            "type": "input",
+            "position": {
+                "x": 150,
+                "y": 0
+            },
+            "data": {
+                "key": "val",
+                "value": "Hello FlowJo",
+                "type": "string"
+            }
+        },
+        {
+            "id": "assign-node",
+            "type": "counter",
+            "position": {
+                "x": 400,
+                "y": 0
+            },
+            "data": {
+                "variable": "saved_val",
+                "operation": "assign",
+                "amount": "0"
+            }
+        },
+        {
+            "id": "display-node",
+            "type": "display",
+            "position": {
+                "x": 650,
+                "y": 0
+            },
+            "data": {
+                "input": "Assigned Value: {{saved_val}}"
+            }
+        }
+    ],
+    "edges": [
+        {
+            "id": "e1",
+            "source": "start",
+            "target": "input-data",
+            "animated": true
+        },
+        {
+            "id": "e2",
+            "source": "input-data",
+            "target": "assign-node",
+            "animated": true
+        },
+        {
+            "id": "e3",
+            "source": "assign-node",
+            "target": "display-node",
+            "animated": true
+        }
+    ]
+}

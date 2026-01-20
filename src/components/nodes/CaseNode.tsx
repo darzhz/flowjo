@@ -4,7 +4,7 @@ import { CheckCircle2, XCircle } from "lucide-react";
 
 export default function CaseNode({ data, type }: { data: any, type: string }) {
     const isSuccess = type === "caseSuccess";
-
+    data = data || {};
     return (
         <Card className={`min-w-[150px] p-3 flex items-center gap-2 border shadow-sm ${isSuccess ? "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800" : "bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800"}`}>
             <Handle type="target" position={Position.Left} className="!bg-gray-400" />

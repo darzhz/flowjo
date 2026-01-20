@@ -12,8 +12,10 @@ import {
 import { KeyValueList } from "./ui/key-value-list";
 import { Settings } from "lucide-react";
 
-export function EnvironmentManager() {
-    const [open, setOpen] = useState(false);
+export function EnvironmentManager({ open: controlledOpen, onOpenChange }: { open?: boolean, onOpenChange?: (open: boolean) => void }) {
+    const [internalOpen, setInternalOpen] = useState(false);
+    const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+    const setOpen = onOpenChange || setInternalOpen;
     const [env, setEnv] = useState<Record<string, string>>({});
 
     useEffect(() => {
@@ -36,7 +38,7 @@ export function EnvironmentManager() {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="hidden">
                     <Settings className="h-5 w-5 text-gray-400 hover:text-white" />
                 </Button>
             </DialogTrigger>

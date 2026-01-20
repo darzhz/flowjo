@@ -19,7 +19,7 @@ export default memo(({ data, id }: { data: InputNodeData; id: string }) => {
     };
 
     return (
-        <Card className="min-w-[250px] bg-white border text-foreground dark:bg-gray-900 dark:text-gray-300 border-blue-500 shadow-md">
+        <Card className="min-w-[250px] w-full bg-white border text-foreground dark:bg-gray-900 dark:text-gray-300 border-blue-500 shadow-md">
             <CardHeader className="p-3 pb-2 bg-blue-50 dark:bg-blue-900/20">
                 <CardTitle className="text-sm font-medium flex items-center gap-2 text-blue-700 dark:text-blue-400">
                     Input Variable

@@ -142,7 +142,8 @@ impl WorkflowEngine {
             "condition" => self.execute_condition_node(node, prior_results, rev_adj),
             "loop" => self.execute_loop_node(node, prior_results, rev_adj),
             "capture" => self.execute_capture_node(node, prior_results, rev_adj, variables),
-            "input" => self.execute_input_node(node),
+            "counter" => self.execute_counter_node(node, prior_results, rev_adj, variables),
+            "input" => self.execute_input_node(node, variables),
             "httpRequest" => self.execute_http_node(node, variables).await,
             "debug" => self.execute_debug_node(node, prior_results, rev_adj),
             "display" | "tabulize" | "valueselector" => self.execute_passthrough_node(node, prior_results, rev_adj),
@@ -172,8 +173,25 @@ impl WorkflowEngine {
         }
     }
 
-    fn execute_input_node(&self, node: &Node) -> ExecutionResult {
-        let val_str = node.data.get("value").and_then(|v| v.as_str()).unwrap_or("");
+    fn substitute(&self, text: &str, vars: &HashMap<String, serde_json::Value>) -> String {
+        let mut result = text.to_string();
+        for (key, val) in vars {
+            let placeholder = format!("{{{{{}}}}}", key);
+            if result.contains(&placeholder) {
+                let val_str = if val.is_string() {
+                    val.as_str().unwrap().to_string()
+                } else {
+                    val.to_string()
+                };
+                result = result.replace(&placeholder, &val_str);
+            }
+        }
+        result
+    }
+
+    fn execute_input_node(&self, node: &Node, variables: &HashMap<String, serde_json::Value>) -> ExecutionResult {
+        let raw_val = node.data.get("value").and_then(|v| v.as_str()).unwrap_or("");
+        let val_str = self.substitute(raw_val, variables);
         let val_type = node.data.get("type").and_then(|v| v.as_str()).unwrap_or("string");
         
         let output_val = match val_type {
@@ -181,17 +199,17 @@ impl WorkflowEngine {
                 if let Ok(num) = val_str.parse::<f64>() {
                     serde_json::json!(num)
                 } else {
-                    serde_json::Value::String(val_str.to_string())
+                    serde_json::Value::String(val_str)
                 }
             },
             "json" => {
-                if let Ok(json_val) = serde_json::from_str::<serde_json::Value>(val_str) {
+                if let Ok(json_val) = serde_json::from_str::<serde_json::Value>(&val_str) {
                     json_val
                 } else {
-                    serde_json::Value::String(val_str.to_string())
+                    serde_json::Value::String(val_str)
                 }
             },
-            _ => serde_json::Value::String(val_str.to_string()),
+            _ => serde_json::Value::String(val_str),
         };
 
         ExecutionResult {
@@ -224,13 +242,23 @@ impl WorkflowEngine {
         
         let input_str = input_val.as_str().map(|s| s.to_string()).unwrap_or_else(|| input_val.to_string());
         
-        let is_true = match condition {
-            "equal" => input_str == target_val_str,
-            "notEqual" => input_str != target_val_str,
-            "greaterThan" => input_str > target_val_str.to_string(),
-            "lessThan" => input_str < target_val_str.to_string(),
-            "contains" => input_str.contains(target_val_str),
-            _ => false,
+        let is_true = if let (Some(iv), Ok(tv)) = (input_val.as_f64().or_else(|| input_str.parse::<f64>().ok()), target_val_str.parse::<f64>()) {
+            match condition {
+                "equal" => (iv - tv).abs() < f64::EPSILON,
+                "notEqual" => (iv - tv).abs() >= f64::EPSILON,
+                "greaterThan" => iv > tv,
+                "lessThan" => iv < tv,
+                _ => false,
+            }
+        } else {
+            match condition {
+                "equal" => input_str == target_val_str,
+                "notEqual" => input_str != target_val_str,
+                "greaterThan" => input_str > target_val_str.to_string(),
+                "lessThan" => input_str < target_val_str.to_string(),
+                "contains" => input_str.contains(target_val_str),
+                _ => false,
+            }
         };
         
         let active = if is_true { "true" } else { "false" };
@@ -309,21 +337,7 @@ impl WorkflowEngine {
     async fn execute_http_node(&self, node: &Node, variables: &HashMap<String, serde_json::Value>) -> ExecutionResult {
         let method = node.data.get("method").and_then(|v| v.as_str()).unwrap_or("GET");
         let mut url = node.data.get("endpoint").and_then(|v| v.as_str()).unwrap_or("").to_string();
-        
-        // Helper to substitute variables
-        let substitute = |text: &str, vars: &HashMap<String, serde_json::Value>| -> String {
-            let mut result = text.to_string();
-            for (key, val) in vars {
-                let placeholder = format!("{{{{{}}}}}", key);
-                if result.contains(&placeholder) {
-                    let val_str = val.as_str().map(|s| s.to_string()).unwrap_or_else(|| val.to_string());
-                    result = result.replace(&placeholder, &val_str);
-                }
-            }
-            result
-        };
-
-        url = substitute(&url, variables);
+        url = self.substitute(&url, variables);
 
         let mut builder = match method {
             "GET" => self.client.get(&url),
@@ -338,7 +352,7 @@ impl WorkflowEngine {
         if let Some(headers) = node.data.get("headers").and_then(|h| h.as_object()) {
             for (k, v) in headers {
                 if let Some(v_str) = v.as_str() {
-                    let subbed_v = substitute(v_str, variables);
+                    let subbed_v = self.substitute(v_str, variables);
                     builder = builder.header(k, subbed_v);
                 }
             }
@@ -352,7 +366,7 @@ impl WorkflowEngine {
                 // Or just substitute values if they are strings.
                 // For simplicity: stringify whole body, substitute, then parse back to json to send.
                 let body_str = body.to_string();
-                let subbed_body_str = substitute(&body_str, variables);
+                let subbed_body_str = self.substitute(&body_str, variables);
                 if let Ok(parsed_body) = serde_json::from_str::<serde_json::Value>(&subbed_body_str) {
                     builder = builder.json(&parsed_body);
                 } else {
@@ -471,6 +485,56 @@ impl WorkflowEngine {
             node_id: node.id.clone(),
             status: "success".to_string(),
             output: serde_json::json!({ "data": result }),
+            error: None,
+            active_handle: None,
+        }
+    }
+
+    fn execute_counter_node(&self, node: &Node, prior_results: &HashMap<String, ExecutionResult>, rev_adj: &HashMap<String, Vec<String>>, variables: &mut HashMap<String, serde_json::Value>) -> ExecutionResult {
+        let variable_name = node.data.get("variable").and_then(|v| v.as_str()).unwrap_or("");
+        let operation = node.data.get("operation").and_then(|v| v.as_str()).unwrap_or("increment");
+        
+        // Amount can now be a string for substitution or a number
+        let default_amount = serde_json::json!(0.0);
+        let raw_amount = node.data.get("amount").unwrap_or(&default_amount);
+        let amount_str = if raw_amount.is_string() {
+            raw_amount.as_str().unwrap().to_string()
+        } else {
+            raw_amount.to_string()
+        };
+        
+        let subbed_amount = self.substitute(&amount_str, variables);
+        let amount_val = subbed_amount.parse::<f64>().unwrap_or(0.0);
+
+        if !variable_name.is_empty() {
+            let current_val = variables.get(variable_name).and_then(|v| v.as_f64()).unwrap_or(0.0);
+            
+            let new_val = match operation {
+                "increment" => serde_json::json!(current_val + amount_val),
+                "decrement" => serde_json::json!(current_val - amount_val),
+                "set" => serde_json::json!(amount_val),
+                "assign" => {
+                    // Get data from first parent
+                    let mut input_data = serde_json::Value::Null;
+                    if let Some(parents) = rev_adj.get(&node.id) {
+                        if let Some(first_parent) = parents.first() {
+                            if let Some(parent_res) = prior_results.get(first_parent) {
+                                input_data = parent_res.output.get("data").cloned().unwrap_or(parent_res.output.clone());
+                            }
+                        }
+                    }
+                    input_data
+                },
+                _ => serde_json::json!(current_val),
+            };
+            
+            variables.insert(variable_name.to_string(), new_val);
+        }
+
+        ExecutionResult {
+            node_id: node.id.clone(),
+            status: "success".to_string(),
+            output: serde_json::json!({ "variable": variable_name, "status": "updated" }),
             error: None,
             active_handle: None,
         }

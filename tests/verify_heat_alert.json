@@ -1,0 +1,186 @@
+{
+    "nodes": [
+        {
+            "id": "start",
+            "type": "start",
+            "position": {
+                "x": 0,
+                "y": 250
+            },
+            "data": {
+                "label": "Start"
+            }
+        },
+        {
+            "id": "reset-counter",
+            "type": "counter",
+            "position": {
+                "x": 150,
+                "y": 250
+            },
+            "data": {
+                "variable": "hot_day_count",
+                "operation": "set",
+                "amount": 0
+            }
+        },
+        {
+            "id": "mock-input",
+            "type": "input",
+            "position": {
+                "x": 400,
+                "y": 250
+            },
+            "data": {
+                "key": "temps",
+                "value": "[36, 37, 34, 38, 33]",
+                "type": "json"
+            }
+        },
+        {
+            "id": "loop-temps",
+            "type": "loop",
+            "position": {
+                "x": 650,
+                "y": 250
+            },
+            "data": {}
+        },
+        {
+            "id": "check-35",
+            "type": "condition",
+            "position": {
+                "x": 900,
+                "y": 150
+            },
+            "data": {
+                "condition": "greaterThan",
+                "targetValue": "35"
+            }
+        },
+        {
+            "id": "inc-counter",
+            "type": "counter",
+            "position": {
+                "x": 1150,
+                "y": 100
+            },
+            "data": {
+                "variable": "hot_day_count",
+                "operation": "increment",
+                "amount": 1
+            }
+        },
+        {
+            "id": "done-input",
+            "type": "input",
+            "position": {
+                "x": 900,
+                "y": 450
+            },
+            "data": {
+                "key": "final_count",
+                "value": "{{hot_day_count}}",
+                "type": "number"
+            }
+        },
+        {
+            "id": "final-check",
+            "type": "condition",
+            "position": {
+                "x": 1150,
+                "y": 450
+            },
+            "data": {
+                "condition": "greaterThan",
+                "targetValue": "2"
+            }
+        },
+        {
+            "id": "capture-alert",
+            "type": "capture",
+            "position": {
+                "x": 1400,
+                "y": 450
+            },
+            "data": {
+                "path": "result",
+                "variable": "heat_alert"
+            }
+        }
+    ],
+    "edges": [
+        {
+            "id": "e1",
+            "source": "start",
+            "target": "reset-counter",
+            "animated": true
+        },
+        {
+            "id": "e2",
+            "source": "reset-counter",
+            "target": "mock-input",
+            "animated": true
+        },
+        {
+            "id": "e3",
+            "source": "mock-input",
+            "target": "loop-temps",
+            "animated": true
+        },
+        {
+            "id": "e4",
+            "source": "loop-temps",
+            "sourceHandle": "body",
+            "target": "check-35",
+            "animated": true
+        },
+        {
+            "id": "e5",
+            "source": "check-35",
+            "sourceHandle": "true",
+            "target": "inc-counter",
+            "animated": true
+        },
+        {
+            "id": "e6",
+            "source": "inc-counter",
+            "target": "loop-temps",
+            "animated": true
+        },
+        {
+            "id": "e7",
+            "source": "check-35",
+            "sourceHandle": "false",
+            "target": "loop-temps",
+            "animated": true
+        },
+        {
+            "id": "e8",
+            "source": "loop-temps",
+            "sourceHandle": "done",
+            "target": "done-input",
+            "animated": true
+        },
+        {
+            "id": "e9",
+            "source": "done-input",
+            "target": "final-check",
+            "animated": true
+        },
+        {
+            "id": "ea",
+            "source": "final-check",
+            "sourceHandle": "true",
+            "target": "capture-alert",
+            "animated": true
+        },
+        {
+            "id": "eb",
+            "source": "final-check",
+            "sourceHandle": "false",
+            "target": "capture-alert",
+            "animated": true
+        }
+    ]
+}

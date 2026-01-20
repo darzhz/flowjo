@@ -91,7 +91,7 @@ fn load_environment() -> Result<HashMap<String, String>, String> {
 }
 
 #[tauri::command]
-fn list_flows() -> Result<Vec<String>, String> {
+fn list_flows(workspace: Option<String>) -> Result<Vec<String>, String> {
     let mut files = Vec::new();
     
     // Helper to scan dir
@@ -110,8 +110,12 @@ fn list_flows() -> Result<Vec<String>, String> {
         f
     };
 
-    files.extend(scan("."));
-    files.extend(scan("tests"));
+    if let Some(ws) = workspace {
+        files.extend(scan(&ws));
+    } else {
+        files.extend(scan("."));
+        files.extend(scan("tests"));
+    }
     
     Ok(files)
 }
@@ -120,6 +124,7 @@ fn list_flows() -> Result<Vec<String>, String> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             greet, 
             execute_flow, 
