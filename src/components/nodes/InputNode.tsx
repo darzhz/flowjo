@@ -31,14 +31,14 @@ export default memo(({ data, id }: { data: InputNodeData; id: string }) => {
                     <Input
                         value={key}
                         onChange={(e) => handleChange(e.target.value, value, type)}
-                        className="h-8 text-xs"
+                        className="h-8 text-xs bg-transparent dark:bg-gray-800"
                         placeholder="e.g. userId"
                     />
                 </div>
                 <div className="space-y-1">
                     <Label className="text-xs">Type</Label>
                     <Select value={type} onValueChange={(v: any) => handleChange(key, value, v)}>
-                        <SelectTrigger className="h-8 text-xs">
+                        <SelectTrigger className="h-8 text-xs bg-transparent dark:bg-gray-800">
                             <SelectValue placeholder="Type" />
                         </SelectTrigger>
                         <SelectContent>
@@ -53,7 +53,7 @@ export default memo(({ data, id }: { data: InputNodeData; id: string }) => {
                     <Input
                         value={value}
                         onChange={(e) => handleChange(key, e.target.value, type)}
-                        className="h-8 text-xs font-mono"
+                        className="h-8 text-xs font-mono bg-transparent dark:bg-gray-800"
                         placeholder="Value..."
                     />
                 </div>

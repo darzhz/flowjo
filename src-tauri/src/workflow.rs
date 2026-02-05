@@ -103,24 +103,37 @@ impl WorkflowEngine {
 
         while let Some(node_id) = queue.pop() {
             *visited_count.entry(node_id.clone()).or_insert(0) += 1;
-            if *visited_count.get(&node_id).unwrap() > 100 {
+            if *visited_count.get(&node_id).unwrap() > 10000 {
                 continue; 
             }
 
-            if let Some(node) = node_map.get(&node_id) {
-                let result = self.execute_node(node, &results, &rev_adj_list, &mut variables).await;
-                
-                let res_clone = ExecutionResult {
-                    node_id: result.node_id.clone(),
-                    status: result.status.clone(),
-                    output: result.output.clone(),
-                    error: result.error.clone(),
-                    active_handle: result.active_handle.clone(),
-                };
-                results.insert(node_id.clone(), res_clone);
+// ... (inside execute loop)
 
-                if let Some(neighbors) = adj_list.get(&node_id) {
-                    for (edge, neighbor_id) in neighbors {
+                if let Some(node) = node_map.get(&node_id) {
+                    let result = self.execute_node(node, &results, &rev_adj_list, &mut variables).await;
+                    
+                    // ... result storage ...
+                    let res_clone = ExecutionResult {
+                        node_id: result.node_id.clone(),
+                        status: result.status.clone(),
+                        output: result.output.clone(),
+                        error: result.error.clone(),
+                        active_handle: result.active_handle.clone(),
+                    };
+                    results.insert(node_id.clone(), res_clone);
+
+                    // Re-queue loop node if it's continuing
+                    if node.node_type == "loop" {
+                        if let Some(handle) = &result.active_handle {
+                            if handle == "body" {
+                                queue.push(node_id.clone());
+                            }
+                        }
+                    }
+
+                    if let Some(neighbors) = adj_list.get(&node_id) {
+                        for (edge, neighbor_id) in neighbors {
+// ...
                         let should_dispatch = match &result.active_handle {
                             Some(handle) => edge.source_handle.as_deref() == Some(handle),
                             None => true 
@@ -146,23 +159,17 @@ impl WorkflowEngine {
             "input" => self.execute_input_node(node, variables),
             "httpRequest" => self.execute_http_node(node, variables).await,
             "debug" => self.execute_debug_node(node, prior_results, rev_adj),
-            "display" | "tabulize" | "valueselector" => self.execute_passthrough_node(node, prior_results, rev_adj),
-            "start" | "output" => self.execute_passthrough_node(node, prior_results, rev_adj),
+            "carousel" => self.execute_passthrough_node(node, prior_results, rev_adj), 
+            "start" | "output" | "comment" | "group" => self.execute_passthrough_node(node, prior_results, rev_adj),
+            "serverTrigger" => self.execute_server_trigger_node(node, variables),
+            "serverResponse" => self.execute_server_response_node(node, prior_results, rev_adj, variables),
             "mapper" => self.execute_mapper_node(node, prior_results, rev_adj),
-            "caseSuccess" => ExecutionResult {
-                node_id: node.id.clone(),
-                status: "success".to_string(),
-                output: serde_json::json!({ "status": "completed" }),
-                error: None,
-                active_handle: None,
-            },
-            "caseFail" => ExecutionResult {
-                node_id: node.id.clone(),
-                status: "error".to_string(),
-                output: serde_json::json!({ "status": "failed" }),
-                error: Some("Explicit Failure Node Triggered".to_string()),
-                active_handle: None,
-            },
+            "scraper" => self.execute_scraper_node(node, prior_results, rev_adj),
+            "filter" => self.execute_filter_node(node, prior_results, rev_adj),
+            "arrayMap" => self.execute_array_map_node(node, prior_results, rev_adj),
+            "assert" => self.execute_assert_node(node, prior_results, rev_adj),
+
+            // Remainder are skipped or unknown
              _ => ExecutionResult {
                 node_id: node.id.clone(),
                 status: "skipped".to_string(),
@@ -170,6 +177,233 @@ impl WorkflowEngine {
                 error: None,
                 active_handle: None,
             },
+        }
+    }
+
+
+
+    fn execute_scraper_node(&self, node: &Node, prior_results: &HashMap<String, ExecutionResult>, rev_adj: &HashMap<String, Vec<String>>) -> ExecutionResult {
+        let input_html = if let Some(parents) = rev_adj.get(&node.id) {
+            parents.first().and_then(|id| prior_results.get(id)).and_then(|res| {
+                res.output.get("data").and_then(|d| d.as_str()).or_else(|| res.output.as_str())
+            }).unwrap_or("")
+        } else {
+            ""
+        };
+
+        if input_html.is_empty() {
+            return ExecutionResult {
+                node_id: node.id.clone(),
+                status: "success".to_string(),
+                output: serde_json::json!({ "items": [] }),
+                error: None,
+                active_handle: None,
+            };
+        }
+
+        let document = scraper::Html::parse_document(input_html);
+        let rules = node.data.get("rules").and_then(|r| r.as_array());
+        
+        // Universal Scraping: List or Single Item
+        // If "container_selector" is present, we extract multiple items.
+        let container_selector_str = node.data.get("container_selector").and_then(|s| s.as_str()).unwrap_or("");
+        
+        let mut results = Vec::new();
+
+        if !container_selector_str.is_empty() {
+             if let Ok(selector) = scraper::Selector::parse(container_selector_str) {
+                 for element in document.select(&selector) {
+                     let mut item = serde_json::Map::new();
+                     if let Some(extraction_rules) = rules {
+                         for rule in extraction_rules {
+                             let sel_str = rule.get("selector").and_then(|s| s.as_str()).unwrap_or("");
+                             let attr = rule.get("attribute").and_then(|s| s.as_str()).unwrap_or("text");
+                             let key = rule.get("key").and_then(|s| s.as_str()).unwrap_or("value");
+                             
+                             if let Ok(inner_sel) = scraper::Selector::parse(sel_str) {
+                                  if let Some(inner_el) = element.select(&inner_sel).next() {
+                                      let val = if attr == "text" {
+                                          inner_el.text().collect::<Vec<_>>().join(" ").trim().to_string()
+                                      } else {
+                                          inner_el.value().attr(attr).unwrap_or("").to_string()
+                                      };
+                                      item.insert(key.to_string(), serde_json::json!(val));
+                                  }
+                             }
+                         }
+                     }
+                     if !item.is_empty() {
+                        results.push(serde_json::Value::Object(item));
+                     }
+                 }
+             }
+        } else {
+            // Single object extraction from root
+            let mut item = serde_json::Map::new();
+            if let Some(extraction_rules) = rules {
+                for rule in extraction_rules {
+                    let sel_str = rule.get("selector").and_then(|s| s.as_str()).unwrap_or("");
+                    let attr = rule.get("attribute").and_then(|s| s.as_str()).unwrap_or("text");
+                    let key = rule.get("key").and_then(|s| s.as_str()).unwrap_or("value");
+                    
+                    if let Ok(sel) = scraper::Selector::parse(sel_str) {
+                         if let Some(el) = document.select(&sel).next() {
+                             let val = if attr == "text" {
+                                 el.text().collect::<Vec<_>>().join(" ").trim().to_string()
+                             } else {
+                                 el.value().attr(attr).unwrap_or("").to_string()
+                             };
+                             item.insert(key.to_string(), serde_json::json!(val));
+                         }
+                    }
+                }
+            }
+            if !item.is_empty() {
+                results.push(serde_json::Value::Object(item));
+            }
+        }
+
+        ExecutionResult {
+            node_id: node.id.clone(),
+            status: "success".to_string(),
+            output: serde_json::json!({ "items": results, "data": results }),
+            error: None,
+            active_handle: None,
+        }
+    }
+
+    fn execute_filter_node(&self, node: &Node, prior_results: &HashMap<String, ExecutionResult>, rev_adj: &HashMap<String, Vec<String>>) -> ExecutionResult {
+        let input_val = if let Some(parents) = rev_adj.get(&node.id) {
+             parents.first().and_then(|id| prior_results.get(id)).and_then(|res| {
+                 res.output.get("data").or_else(|| Some(&res.output))
+             })
+        } else {
+            None
+        };
+
+        if input_val.is_none() {
+             return ExecutionResult {
+                node_id: node.id.clone(),
+                status: "success".to_string(),
+                output: serde_json::json!({ "items": [], "total": 0, "data": [] }),
+                error: None,
+                active_handle: None,
+            };
+        }
+
+        let val = input_val.unwrap();
+        let array = if let Some(arr) = val.as_array() {
+            arr.clone()
+        } else {
+            vec![val.clone()]
+        };
+
+        let property = node.data.get("property").and_then(|p| p.as_str()).unwrap_or("");
+        let condition = node.data.get("condition").and_then(|c| c.as_str()).unwrap_or("equals");
+        let query_value = node.data.get("value").and_then(|v| v.as_str()).unwrap_or("");
+
+        let mut filtered = Vec::new();
+        for item in array {
+            let item_prop = if property.is_empty() {
+                Some(item.clone())
+            } else {
+                item.get(property).cloned()
+            };
+
+            let matches = match condition {
+                "exists" => item_prop.is_some() && !item_prop.as_ref().unwrap().is_null(),
+                "notExists" => item_prop.is_none() || item_prop.as_ref().unwrap().is_null(),
+                _ => {
+                    let item_str = item_prop.map(|v| {
+                        if v.is_string() { v.as_str().unwrap().to_string() } else { v.to_string() }
+                    }).unwrap_or_else(|| "".to_string());
+
+                    match condition {
+                        "equals" => item_str == query_value,
+                        "notEquals" => item_str != query_value,
+                        "contains" => item_str.contains(query_value),
+                        "regex" => {
+                            if let Ok(re) = regex::Regex::new(query_value) {
+                                re.is_match(&item_str)
+                            } else {
+                                false
+                            }
+                        },
+                        "extension" => {
+                            let exts: Vec<&str> = query_value.split(',').map(|s| s.trim()).collect();
+                            exts.iter().any(|&e| item_str.ends_with(e))
+                        },
+                        _ => false,
+                    }
+                }
+            };
+
+            if matches {
+                filtered.push(item);
+            }
+        }
+
+        ExecutionResult {
+            node_id: node.id.clone(),
+            status: "success".to_string(),
+            output: serde_json::json!({ "items": filtered, "total": filtered.len(), "data": filtered }),
+            error: None,
+            active_handle: None,
+        }
+    }
+
+    fn execute_array_map_node(&self, node: &Node, prior_results: &HashMap<String, ExecutionResult>, rev_adj: &HashMap<String, Vec<String>>) -> ExecutionResult {
+        let input_val = if let Some(parents) = rev_adj.get(&node.id) {
+             parents.first().and_then(|id| prior_results.get(id)).and_then(|res| {
+                 res.output.get("data").or_else(|| Some(&res.output))
+             })
+        } else {
+            None
+        };
+
+        if input_val.is_none() {
+             return ExecutionResult {
+                node_id: node.id.clone(),
+                status: "success".to_string(),
+                output: serde_json::json!({ "items": [], "total": 0, "data": [] }),
+                error: None,
+                active_handle: None,
+            };
+        }
+
+        let val = input_val.unwrap();
+        let array = if let Some(arr) = val.as_array() {
+            arr.clone()
+        } else {
+            vec![val.clone()]
+        };
+
+        let path = node.data.get("path").and_then(|p| p.as_str()).unwrap_or("");
+        
+        let mut results = Vec::new();
+        for item in array {
+            let mut extracted = item.clone();
+            if !path.is_empty() {
+                for part in path.split('.') {
+                    if let Some(val) = extracted.get(part) {
+                        extracted = val.clone();
+                    } else {
+                        extracted = serde_json::Value::Null;
+                        break;
+                    }
+                }
+            }
+            if !extracted.is_null() {
+                results.push(extracted);
+            }
+        }
+
+        ExecutionResult {
+            node_id: node.id.clone(),
+            status: "success".to_string(),
+            output: serde_json::json!({ "items": results, "total": results.len(), "data": results }),
+            error: None,
+            active_handle: None,
         }
     }
 
@@ -320,15 +554,26 @@ impl WorkflowEngine {
         }
     }
 
-    fn execute_passthrough_node(&self, node: &Node, _prior_results: &HashMap<String, ExecutionResult>, _rev_adj: &HashMap<String, Vec<String>>) -> ExecutionResult {
-        // Simple passthrough: look for upstream data or just succeed
-        // In a real flow, we'd gather inputs from edges.
-        // For now, these nodes (like Display) mostly consume data on the frontend or pass it along.
-        // Returning success allows the flow to continue.
+    fn execute_passthrough_node(&self, node: &Node, prior_results: &HashMap<String, ExecutionResult>, rev_adj: &HashMap<String, Vec<String>>) -> ExecutionResult {
+        let mut input_val = serde_json::Value::Null;
+        
+        // Try to get data from first parent
+        if let Some(parents) = rev_adj.get(&node.id) {
+            if let Some(first_parent) = parents.first() {
+                if let Some(parent_res) = prior_results.get(first_parent) {
+                    if let Some(d) = parent_res.output.get("data") {
+                        input_val = d.clone();
+                    } else {
+                        input_val = parent_res.output.clone();
+                    }
+                }
+            }
+        }
+
         ExecutionResult {
             node_id: node.id.clone(),
             status: "success".to_string(),
-            output: serde_json::json!({ "status": "ok" }),
+            output: serde_json::json!({ "status": "ok", "data": input_val }),
             error: None,
             active_handle: None,
         }
@@ -359,35 +604,46 @@ impl WorkflowEngine {
         }
 
         // Add Body (if JSON)
-        // Check content type. For now assuming mostly JSON or auto-detection if body is present
         if let Some(body) = node.data.get("body") {
             if body.is_object() || body.is_array() {
-                // If it's already a JSON object in node.data, we might want to stringify -> substitute -> parse back?
-                // Or just substitute values if they are strings.
-                // For simplicity: stringify whole body, substitute, then parse back to json to send.
                 let body_str = body.to_string();
                 let subbed_body_str = self.substitute(&body_str, variables);
                 if let Ok(parsed_body) = serde_json::from_str::<serde_json::Value>(&subbed_body_str) {
                     builder = builder.json(&parsed_body);
                 } else {
-                     // Fallback to text body if json parse fails?
                      builder = builder.body(subbed_body_str);
                 }
             }
         }
-        
+
         match builder.send().await {
             Ok(res) => {
                 let status = res.status().as_u16();
-                let body = res.json::<serde_json::Value>().await.ok();
+                let output = if res.headers().get("content-type").and_then(|h| h.to_str().ok()).map(|s| s.contains("json")).unwrap_or(false) {
+                    let body = res.json::<serde_json::Value>().await.ok();
+                     serde_json::json!({
+                        "status": status,
+                        "data": body
+                    })
+                } else {
+                    let text = res.text().await.unwrap_or_default();
+                    if let Ok(json_val) = serde_json::from_str::<serde_json::Value>(&text) {
+                         serde_json::json!({
+                            "status": status,
+                            "data": json_val
+                        })
+                    } else {
+                         serde_json::json!({
+                            "status": status,
+                            "data": text
+                        })
+                    }
+                };
                 
                 ExecutionResult {
                     node_id: node.id.clone(),
                     status: "success".to_string(),
-                    output: serde_json::json!({
-                        "status": status,
-                        "data": body
-                    }),
+                    output,
                     error: None,
                     active_handle: None,
                 }
@@ -402,12 +658,21 @@ impl WorkflowEngine {
         }
     }
 
-    fn execute_debug_node(&self, node: &Node, _prior_results: &HashMap<String, ExecutionResult>, _rev_adj: &HashMap<String, Vec<String>>) -> ExecutionResult {
-        // Collect inputs from upstream? 
+    fn execute_debug_node(&self, node: &Node, prior_results: &HashMap<String, ExecutionResult>, rev_adj: &HashMap<String, Vec<String>>) -> ExecutionResult {
+        let mut debug_data = HashMap::new();
+        
+        if let Some(parents) = rev_adj.get(&node.id) {
+            for parent_id in parents {
+                if let Some(res) = prior_results.get(parent_id) {
+                    debug_data.insert(parent_id.clone(), res.output.clone());
+                }
+            }
+        }
+
         ExecutionResult {
             node_id: node.id.clone(),
             status: "success".to_string(),
-            output: serde_json::json!({ "connected_results": "TODO" }), 
+            output: serde_json::json!({ "debug": debug_data, "message": "Debug info captured" }), 
             error: None,
             active_handle: None,
         }
@@ -525,6 +790,45 @@ impl WorkflowEngine {
                     }
                     input_data
                 },
+                "append" => {
+                    // Logic for append (existing)
+                    // ... (keep append logic above or copy it if needed context)
+                    // Wait, I need to match the existing context properly. 
+                    // To be safe, I will replace the whole block or append new cases.
+                    // Let's rewrite the append block and new ones.
+                    
+                    let input_data = self.get_first_parent_data(node, prior_results, rev_adj);
+                    
+                    let mut arr = self.get_variable_as_array(variables, variable_name);
+                    
+                    if !input_data.is_null() {
+                        arr.push(input_data);
+                    }
+                    
+                    serde_json::Value::Array(arr)
+                },
+                "prepend" => {
+                    let input_data = self.get_first_parent_data(node, prior_results, rev_adj);
+                    let mut arr = self.get_variable_as_array(variables, variable_name);
+                    
+                    if !input_data.is_null() {
+                        arr.insert(0, input_data);
+                    }
+                    
+                    serde_json::Value::Array(arr)
+                },
+                "pop" => {
+                    let mut arr = self.get_variable_as_array(variables, variable_name);
+                    arr.pop();
+                    serde_json::Value::Array(arr)
+                },
+                "shift" => {
+                    let mut arr = self.get_variable_as_array(variables, variable_name);
+                    if !arr.is_empty() {
+                        arr.remove(0);
+                    }
+                    serde_json::Value::Array(arr)
+                },
                 _ => serde_json::json!(current_val),
             };
             
@@ -535,6 +839,159 @@ impl WorkflowEngine {
             node_id: node.id.clone(),
             status: "success".to_string(),
             output: serde_json::json!({ "variable": variable_name, "status": "updated" }),
+            error: None,
+            active_handle: None,
+        }
+    }
+
+    fn execute_assert_node(&self, node: &Node, prior_results: &HashMap<String, ExecutionResult>, rev_adj: &HashMap<String, Vec<String>>) -> ExecutionResult {
+        // 1. Get Input
+        let mut input_val = &serde_json::Value::Null;
+        if let Some(parents) = rev_adj.get(&node.id) {
+            if let Some(first_parent) = parents.first() {
+                if let Some(parent_res) = prior_results.get(first_parent) {
+                    if let Some(d) = parent_res.output.get("data") {
+                        input_val = d;
+                    } else {
+                        input_val = &parent_res.output;
+                    }
+                }
+            }
+        }
+
+        // 2. Get Config
+        let condition = node.data.get("condition").and_then(|v| v.as_str()).unwrap_or("equals");
+        let query_value = node.data.get("value").and_then(|v| v.as_str()).unwrap_or("");
+        let message = node.data.get("message").and_then(|v| v.as_str()).unwrap_or("Assertion failed");
+
+        let input_str = if input_val.is_string() {
+            input_val.as_str().unwrap().to_string()
+        } else {
+            input_val.to_string()
+        };
+
+        // 3. Evaluate
+        let passed = match condition {
+            "equals" => input_str == query_value,
+            "notEquals" => input_str != query_value,
+            "contains" => input_str.contains(query_value),
+            "notContains" => !input_str.contains(query_value),
+            "greaterThan" => {
+                 if let (Ok(curr), Ok(target)) = (input_str.parse::<f64>(), query_value.parse::<f64>()) {
+                     curr > target
+                 } else {
+                     false
+                 }
+            },
+            "lessThan" => {
+                 if let (Ok(curr), Ok(target)) = (input_str.parse::<f64>(), query_value.parse::<f64>()) {
+                     curr < target
+                 } else {
+                     false
+                 }
+            },
+             "regex" => {
+                if let Ok(re) = regex::Regex::new(query_value) {
+                    re.is_match(&input_str)
+                } else {
+                    false
+                }
+            },
+            _ => false,
+        };
+
+        // 4. Return Result
+        if passed {
+            ExecutionResult {
+                node_id: node.id.clone(),
+                status: "success".to_string(),
+                output: serde_json::json!({ "status": "passed", "data": input_val }),
+                error: None,
+                active_handle: None,
+            }
+        } else {
+             ExecutionResult {
+                node_id: node.id.clone(),
+                status: "error".to_string(),
+                output: serde_json::json!({ "status": "failed", "actual": input_val, "expected": query_value }),
+                error: Some(format!("{}: Expected {} '{}', got '{}'", message, condition, query_value, input_str)),
+                active_handle: None,
+            }
+        }
+    }
+
+
+    // Helper methods for Variable Ops
+    fn get_first_parent_data(&self, node: &Node, prior_results: &HashMap<String, ExecutionResult>, rev_adj: &HashMap<String, Vec<String>>) -> serde_json::Value {
+        if let Some(parents) = rev_adj.get(&node.id) {
+            if let Some(first_parent) = parents.first() {
+                if let Some(parent_res) = prior_results.get(first_parent) {
+                    return parent_res.output.get("data").cloned().unwrap_or(parent_res.output.clone());
+                }
+            }
+        }
+        serde_json::Value::Null
+    }
+
+    fn get_variable_as_array(&self, variables: &HashMap<String, serde_json::Value>, variable_name: &str) -> Vec<serde_json::Value> {
+        if let Some(curr) = variables.get(variable_name) {
+            if let Some(a) = curr.as_array() {
+                a.clone()
+            } else if curr.is_null() {
+                Vec::new()
+            } else {
+                vec![curr.clone()]
+            }
+        } else {
+            Vec::new()
+        }
+    }
+
+    // Server Trigger Node
+    fn execute_server_trigger_node(&self, node: &Node, variables: &HashMap<String, serde_json::Value>) -> ExecutionResult {
+        // If we are in 'serve' mode, these variables should be populated
+        let method = variables.get("req_method").cloned().unwrap_or(serde_json::Value::Null);
+        let body = variables.get("req_body").cloned().unwrap_or(serde_json::Value::Null);
+        let query = variables.get("req_query").cloned().unwrap_or(serde_json::Value::Null);
+
+        ExecutionResult {
+            node_id: node.id.clone(),
+            status: "success".to_string(),
+            output: serde_json::json!({
+                "method": method,
+                "body": body,
+                "query": query,
+                // "data" field for compatibility with generic nodes that expect "data"
+                "data": body 
+            }),
+            error: None,
+            active_handle: None,
+        }
+    }
+
+    // Server Response Node
+    fn execute_server_response_node(&self, node: &Node, prior_results: &HashMap<String, ExecutionResult>, rev_adj: &HashMap<String, Vec<String>>, variables: &HashMap<String, serde_json::Value>) -> ExecutionResult {
+        let input_data = self.get_first_parent_data(node, prior_results, rev_adj);
+        
+        let status = node.data.get("status").and_then(|v| v.as_i64()).unwrap_or(200);
+        let body = node.data.get("body").cloned().unwrap_or(serde_json::Value::Null);
+        
+        let processed_body = if let Some(body_str) = body.as_str() {
+            serde_json::Value::String(self.substitute(body_str, variables))
+        } else {
+            body
+        };
+
+        ExecutionResult {
+            node_id: node.id.clone(),
+            status: "completed".to_string(),
+            output: serde_json::json!({
+                "server_response": {
+                    "status": status,
+                    "body": processed_body,
+                    "source_data": input_data
+                }
+            }),
             error: None,
             active_handle: None,
         }

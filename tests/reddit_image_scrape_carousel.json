@@ -1,0 +1,245 @@
+{
+    "nodes": [
+        {
+            "id": "node_1",
+            "type": "start",
+            "position": {
+                "x": 100,
+                "y": 100
+            },
+            "data": {
+                "label": "Start"
+            }
+        },
+        {
+            "id": "node_init",
+            "type": "input",
+            "position": {
+                "x": 400,
+                "y": 100
+            },
+            "data": {
+                "variable": "all_images",
+                "type": "json",
+                "value": "[]"
+            }
+        },
+        {
+            "id": "node_count_init",
+            "type": "input",
+            "position": {
+                "x": 700,
+                "y": 100
+            },
+            "data": {
+                "variable": "image_count",
+                "type": "number",
+                "value": "0"
+            }
+        },
+        {
+            "id": "node_2",
+            "type": "httpRequest",
+            "position": {
+                "x": 100,
+                "y": 250
+            },
+            "data": {
+                "method": "GET",
+                "endpoint": "https://www.reddit.com/r/art/hot/.json",
+                "headers": {
+                    "User-Agent": "KnotworkBot/1.0"
+                }
+            }
+        },
+        {
+            "id": "node_3",
+            "type": "capture",
+            "position": {
+                "x": 100,
+                "y": 450
+            },
+            "data": {
+                "path": "data.children",
+                "variable": "posts"
+            }
+        },
+        {
+            "id": "node_4",
+            "type": "loop",
+            "position": {
+                "x": 300,
+                "y": 600
+            },
+            "data": {
+                "input": []
+            }
+        },
+        {
+            "id": "node_5",
+            "type": "capture",
+            "position": {
+                "x": 600,
+                "y": 500
+            },
+            "data": {
+                "path": "data.url",
+                "variable": "imageUrl"
+            }
+        },
+        {
+            "id": "node_6",
+            "type": "filter",
+            "position": {
+                "x": 900,
+                "y": 500
+            },
+            "data": {
+                "property": "",
+                "condition": "extension",
+                "value": ".jpg,.png,.jpeg,.webp"
+            }
+        },
+        {
+            "id": "node_append",
+            "type": "counter",
+            "position": {
+                "x": 1200,
+                "y": 400
+            },
+            "data": {
+                "variable": "all_images",
+                "operation": "append"
+            }
+        },
+        {
+            "id": "node_8",
+            "type": "counter",
+            "position": {
+                "x": 1200,
+                "y": 600
+            },
+            "data": {
+                "variable": "image_count",
+                "operation": "increment",
+                "amount": 1
+            }
+        },
+        {
+            "id": "node_read_images",
+            "type": "input",
+            "position": {
+                "x": 300,
+                "y": 800
+            },
+            "data": {
+                "value": "{{all_images}}",
+                "type": "json"
+            }
+        },
+        {
+            "id": "node_7",
+            "type": "carousel",
+            "position": {
+                "x": 600,
+                "y": 800
+            },
+            "data": {}
+        },
+        {
+            "id": "node_9",
+            "type": "input",
+            "position": {
+                "x": 900,
+                "y": 800
+            },
+            "data": {
+                "value": "{{image_count}}",
+                "type": "number"
+            }
+        },
+        {
+            "id": "node_10",
+            "type": "assert",
+            "position": {
+                "x": 1200,
+                "y": 800
+            },
+            "data": {
+                "condition": "greaterThan",
+                "value": "0",
+                "message": "No images found!"
+            }
+        }
+    ],
+    "edges": [
+        {
+            "id": "e1-init",
+            "source": "node_1",
+            "target": "node_init"
+        },
+        {
+            "id": "e-init-c",
+            "source": "node_init",
+            "target": "node_count_init"
+        },
+        {
+            "id": "e-c-2",
+            "source": "node_count_init",
+            "target": "node_2"
+        },
+        {
+            "id": "e2-3",
+            "source": "node_2",
+            "target": "node_3"
+        },
+        {
+            "id": "e3-4",
+            "source": "node_3",
+            "target": "node_4"
+        },
+        {
+            "id": "e4-5",
+            "source": "node_4",
+            "target": "node_5",
+            "sourceHandle": "body"
+        },
+        {
+            "id": "e5-6",
+            "source": "node_5",
+            "target": "node_6"
+        },
+        {
+            "id": "e6-app",
+            "source": "node_6",
+            "target": "node_append"
+        },
+        {
+            "id": "e6-8",
+            "source": "node_6",
+            "target": "node_8"
+        },
+        {
+            "id": "e4-read",
+            "source": "node_4",
+            "target": "node_read_images",
+            "sourceHandle": "done"
+        },
+        {
+            "id": "read-7",
+            "source": "node_read_images",
+            "target": "node_7"
+        },
+        {
+            "id": "e4-9",
+            "source": "node_4",
+            "target": "node_9",
+            "sourceHandle": "done"
+        },
+        {
+            "id": "e9-10",
+            "source": "node_9",
+            "target": "node_10"
+        }
+    ]
+}

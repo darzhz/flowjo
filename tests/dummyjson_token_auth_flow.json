@@ -1,0 +1,78 @@
+{
+    "nodes": [
+        {
+            "id": "1",
+            "type": "httpRequest",
+            "data": {
+                "method": "POST",
+                "endpoint": "https://dummyjson.com/auth/login",
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "username": "emilys",
+                    "password": "emilyspass"
+                }
+            },
+            "position": {
+                "x": 0,
+                "y": 100
+            }
+        },
+        {
+            "id": "2",
+            "type": "capture",
+            "data": {
+                "path": "accessToken",
+                "variable": "accessToken"
+            },
+            "position": {
+                "x": 350,
+                "y": 100
+            }
+        },
+        {
+            "id": "3",
+            "type": "httpRequest",
+            "data": {
+                "method": "GET",
+                "endpoint": "https://dummyjson.com/auth/me",
+                "headers": {
+                    "Authorization": "Bearer {{accessToken}}"
+                }
+            },
+            "position": {
+                "x": 600,
+                "y": 100
+            }
+        },
+        {
+            "id": "4",
+            "type": "display",
+            "data": {},
+            "position": {
+                "x": 950,
+                "y": 100
+            }
+        }
+    ],
+    "edges": [
+        {
+            "id": "e1-2",
+            "source": "1",
+            "target": "2",
+            "sourceHandle": "success"
+        },
+        {
+            "id": "e2-3",
+            "source": "2",
+            "target": "3"
+        },
+        {
+            "id": "e3-4",
+            "source": "3",
+            "target": "4",
+            "sourceHandle": "success"
+        }
+    ]
+}

@@ -1,0 +1,39 @@
+{
+    "nodes": [
+        {
+            "id": "1",
+            "type": "serverTrigger",
+            "data": {
+                "port": 3000,
+                "method": "GET",
+                "path": "/test"
+            },
+            "position": {
+                "x": 0,
+                "y": 0
+            }
+        },
+        {
+            "id": "2",
+            "type": "serverResponse",
+            "data": {
+                "status": 200,
+                "body": {
+                    "hello": "world",
+                    "status": "success"
+                }
+            },
+            "position": {
+                "x": 300,
+                "y": 0
+            }
+        }
+    ],
+    "edges": [
+        {
+            "id": "e1-2",
+            "source": "1",
+            "target": "2"
+        }
+    ]
+}

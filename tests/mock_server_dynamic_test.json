@@ -1,0 +1,36 @@
+{
+    "nodes": [
+        {
+            "id": "1",
+            "type": "serverTrigger",
+            "data": {
+                "port": 3000,
+                "method": "POST",
+                "path": "/echo"
+            },
+            "position": {
+                "x": 0,
+                "y": 0
+            }
+        },
+        {
+            "id": "2",
+            "type": "serverResponse",
+            "data": {
+                "status": 200,
+                "body": "You sent: {{req_body}} via {{req_method}}. Query: {{req_query}}"
+            },
+            "position": {
+                "x": 300,
+                "y": 0
+            }
+        }
+    ],
+    "edges": [
+        {
+            "id": "e1-2",
+            "source": "1",
+            "target": "2"
+        }
+    ]
+}

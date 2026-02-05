@@ -40,6 +40,10 @@ export default function CounterNode({ id, data }: { id: string, data: any }) {
                             <SelectItem value="decrement">Decrement (-)</SelectItem>
                             <SelectItem value="set">Set (=)</SelectItem>
                             <SelectItem value="assign">Assign Input (←)</SelectItem>
+                            <SelectItem value="append">Append (Push)</SelectItem>
+                            <SelectItem value="prepend">Prepend (Unshift)</SelectItem>
+                            <SelectItem value="pop">Pop (Remove Last)</SelectItem>
+                            <SelectItem value="shift">Shift (Remove First)</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>

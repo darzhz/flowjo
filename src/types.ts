@@ -62,6 +62,62 @@ export interface CounterNodeData {
   onSave?: (id: string, newData: CounterNodeData) => void
 }
 
+export interface ScraperRule {
+  selector: string
+  attribute: string
+  key: string
+}
+
+export interface ScraperNodeData {
+  container_selector?: string
+  rules: ScraperRule[]
+  onSave?: (id: string, newData: ScraperNodeData) => void
+}
+
+export interface FilterNodeData {
+  property: string
+  condition: "equals" | "notEquals" | "contains" | "regex" | "extension"
+  value: string
+  onSave?: (id: string, newData: FilterNodeData) => void
+}
+
+export interface CarouselNodeData {
+  items?: any[]
+}
+
+export interface ArrayMapNodeData {
+  path: string
+  onSave?: (id: string, newData: ArrayMapNodeData) => void
+}
+
+export interface AssertNodeData {
+  condition: "equals" | "notEquals" | "contains" | "notContains" | "greaterThan" | "lessThan" | "regex"
+  value: string
+  message?: string
+  onSave?: (id: string, newData: AssertNodeData) => void
+}
+
+export interface CommentNodeData {
+  text: string
+}
+
+export interface GroupNodeData {
+  label: string
+}
+
+export interface ServerTriggerNodeData {
+  port: number
+  method: string
+  path: string
+  onSave?: (id: string, newData: ServerTriggerNodeData) => void
+}
+
+export interface ServerResponseNodeData {
+  status: number
+  body: any
+  onSave?: (id: string, newData: ServerResponseNodeData) => void
+}
+
 export type NodeData =
   | HttpRequestNodeData
   | ApiResponseNodeData
@@ -74,6 +130,15 @@ export type NodeData =
   | CaptureNodeData
   | MapperNodeData
   | CounterNodeData
+  | ScraperNodeData
+  | FilterNodeData
+  | CarouselNodeData
+  | ArrayMapNodeData
+  | AssertNodeData
+  | CommentNodeData
+  | GroupNodeData
+  | ServerTriggerNodeData
+  | ServerResponseNodeData
 
 export interface FlowNode extends Node {
   data: NodeData

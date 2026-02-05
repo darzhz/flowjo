@@ -1,0 +1,77 @@
+{
+    "nodes": [
+        {
+            "id": "node_1",
+            "type": "start",
+            "position": {
+                "x": 100,
+                "y": 100
+            },
+            "data": {
+                "label": "Start"
+            }
+        },
+        {
+            "id": "node_2",
+            "type": "httpRequest",
+            "position": {
+                "x": 100,
+                "y": 250
+            },
+            "data": {
+                "method": "GET",
+                "endpoint": "https://quotes.toscrape.com/",
+                "headers": {}
+            }
+        },
+        {
+            "id": "node_3",
+            "type": "scraper",
+            "position": {
+                "x": 100,
+                "y": 450
+            },
+            "data": {
+                "container_selector": ".quote",
+                "rules": [
+                    {
+                        "selector": ".text",
+                        "attribute": "text",
+                        "key": "quote"
+                    },
+                    {
+                        "selector": ".author",
+                        "attribute": "text",
+                        "key": "author"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "node_4",
+            "type": "tabulize",
+            "position": {
+                "x": 450,
+                "y": 450
+            },
+            "data": {}
+        }
+    ],
+    "edges": [
+        {
+            "id": "e1-2",
+            "source": "node_1",
+            "target": "node_2"
+        },
+        {
+            "id": "e2-3",
+            "source": "node_2",
+            "target": "node_3"
+        },
+        {
+            "id": "e3-4",
+            "source": "node_3",
+            "target": "node_4"
+        }
+    ]
+}

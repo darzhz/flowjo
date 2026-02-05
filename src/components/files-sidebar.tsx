@@ -94,10 +94,12 @@ export function FilesSidebar({ onLoadFlow, variables }: FilesSidebarProps) {
                                 {files.map((file) => {
                                     const parts = file.split('/');
                                     const fileName = parts.pop() || file;
-                                    //subtract workspace path one level up
-                                    const oneLevelUpPath = workspacePath!.split('/').slice(0, -1).join('/');
-                                    const relativePath = file.replace(oneLevelUpPath, '');
 
+                                    let relativePath = file;
+                                    if (workspacePath && workspacePath.includes('/')) {
+                                        const oneLevelUpPath = workspacePath.split('/').slice(0, -1).join('/');
+                                        relativePath = file.replace(oneLevelUpPath, '');
+                                    }
 
                                     return (
                                         <Button

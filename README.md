@@ -1,6 +1,6 @@
-# FlowJo 🌊
+# Knotwork 🪢
 
-FlowJo is a high-performance, visual API workflow builder built with **Tauri**, **Rust**, and **React**. It allows you to design complex HTTP request chains, process data with logic nodes, and automate API testing through a beautiful node-based interface.
+Knotwork is a high-performance, visual API workflow builder built with **Tauri**, **Rust**, and **React**. It allows you to design complex HTTP request chains, process data with logic nodes, and automate API testing through a beautiful node-based interface.
 
 ## 🚀 Features
 
@@ -16,7 +16,7 @@ FlowJo is a high-performance, visual API workflow builder built with **Tauri**, 
 | Category | Nodes | Description |
 | :--- | :--- | :--- |
 | **Network** | `HTTP Request` | Full-featured client with Methods, Params, Headers, and JSON Body. |
-| **Logic** | `Conditional`, `Loop`, `Capture`, `Case` | Advanced routing including ForEach loops and JSONPath extraction. |
+| **Logic** | `Conditional`, `Loop`, `Capture`, `Case`, `Assert` | Advanced routing including ForEach loops, JSONPath, and Validation. |
 | **Data** | `Value Mapper`, `Variable Op` | Transform data using lookups or perform math/assignments on variables. |
 | **I/O** | `Start`, `Input`, `Output`, `Display` | Triggers, manual inputs, and visual result formatters. |
 
@@ -51,28 +51,31 @@ To build both the high-performance GUI app and the headless runner:
 2. **Build the Runner**:
    ```bash
    cd src-tauri
-   cargo build --release --bin flowjo-runner
+   cargo build --release --bin knotty
    ```
 
-The GUI executable will be in `src-tauri/target/release/flowjo` (or inside the generated installer), and the CLI runner will be at `src-tauri/target/release/flowjo-runner`.
+The GUI executable will be in `src-tauri/target/release/knotwork` (or inside the generated installer), and the CLI runner will be at `src-tauri/target/release/knotty`.
 
 > [!TIP]
-> You can install the runner globally using `cargo install --path src-tauri --bin flowjo-runner` to use it from any directory.
+> You can install the runner globally using `cargo install --path src-tauri --bin knotty` to use it from any directory.
 
 ## 🧪 Headless CLI Runner
 
-FlowJo includes an interactive Rust runner for CI/CD or fast testing without the GUI.
+Knotwork includes an interactive Rust runner for CI/CD or fast testing without the GUI.
 
 ### Interactive Mode:
 Just run the binary without arguments to see a searchable list of flows in your current directory and `tests/` folder.
 ```bash
-cargo run --bin flowjo-runner
+cargo run --bin knotty
 ```
 
 ### Direct Mode:
 ```bash
-cargo run --bin flowjo-runner -- -f tests/weather_challenge.json
+cargo run --bin knotty -- -f tests/weather_challenge.json
 ```
+
+> [!NOTE]
+> Knotty returns **exit code 1** if any node in the flow fails (status="error"). This makes it perfect for CI/CD pipelines and automated testing.
 
 ## 🏗️ Technical Stack
 

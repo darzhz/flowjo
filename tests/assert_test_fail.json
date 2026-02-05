@@ -1,0 +1,52 @@
+{
+    "nodes": [
+        {
+            "id": "node_1",
+            "type": "start",
+            "position": {
+                "x": 100,
+                "y": 100
+            },
+            "data": {
+                "label": "Start"
+            }
+        },
+        {
+            "id": "node_2",
+            "type": "input",
+            "position": {
+                "x": 100,
+                "y": 200
+            },
+            "data": {
+                "value": "test",
+                "type": "string"
+            }
+        },
+        {
+            "id": "node_3",
+            "type": "assert",
+            "position": {
+                "x": 100,
+                "y": 300
+            },
+            "data": {
+                "condition": "equals",
+                "value": "fail",
+                "message": "Should fail"
+            }
+        }
+    ],
+    "edges": [
+        {
+            "id": "e1-2",
+            "source": "node_1",
+            "target": "node_2"
+        },
+        {
+            "id": "e2-3",
+            "source": "node_2",
+            "target": "node_3"
+        }
+    ]
+}

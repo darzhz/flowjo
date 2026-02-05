@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import ReactFlow, {
   type Node,
   Background,
@@ -8,6 +8,8 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   ConnectionMode,
+  Panel,
+  ReactFlowProvider,
 } from "reactflow";
 import { invoke } from "@tauri-apps/api/core";
 import { FilesSidebar } from "./files-sidebar";
@@ -19,319 +21,204 @@ import {
   ContextMenuTrigger,
   ContextMenuSub,
   ContextMenuSubTrigger,
-  ContextMenuSubContent
+  ContextMenuSubContent,
+  ContextMenuSeparator
 } from "../components/ui/context-menu";
 
 import "reactflow/dist/style.css";
 import { FlowControlsDock } from "./FlowControlsDock";
 import HttpRequestNode from "./nodes/HttpRequestNode";
-import { NodeType } from "../types";
-import { X } from "lucide-react";
 import HttpResponceNode from "./nodes/HttpResponceNode";
-import ValueSelector from "./nodes/ValueSelector";
 import ConditionalNode from "./nodes/ConditionalNode";
 import DebugNode from "./nodes/DebugNode";
 import InputNode from "./nodes/InputNode";
 import OutputNode from "./nodes/OutputNode";
-import DisplayNode from "./nodes/DisplayNode";
-import TabulizeNode from "./nodes/TabulizeNode";
 import StartNode from "./nodes/StartNode";
-
 import LoopNode from "./nodes/LoopNode";
 import CaptureNode from "./nodes/CaptureNode";
-import CaseNode from "./nodes/CaseNode";
 import MapperNode from "./nodes/MapperNode";
 import CounterNode from "./nodes/CounterNode";
-
-// ...
+import ScraperNode from "./nodes/ScraperNode";
+import FilterNode from "./nodes/FilterNode";
+import ArrayMapNode from "./nodes/ArrayMapNode";
+import CarouselNode from "./nodes/CarouselNode";
+import AssertNode from "./nodes/AssertNode";
+import CommentNode from "./nodes/CommentNode";
+import GroupNode from "./nodes/GroupNode";
+import ServerTriggerNode from "./nodes/ServerTriggerNode";
+import ServerResponseNode from "./nodes/ServerResponseNode";
 
 const nodeTypes: NodeTypes = {
   httpRequest: HttpRequestNode,
   response: HttpResponceNode,
-  valueselector: ValueSelector,
   condition: ConditionalNode,
   debug: DebugNode,
   input: InputNode,
   output: OutputNode,
-  display: DisplayNode,
-  tabulize: TabulizeNode,
   start: StartNode,
   loop: LoopNode,
   capture: CaptureNode,
-  caseSuccess: CaseNode,
-  caseFail: CaseNode,
   mapper: MapperNode,
   counter: CounterNode,
+  scraper: ScraperNode,
+  filter: FilterNode,
+  arrayMap: ArrayMapNode,
+  carousel: CarouselNode,
+  assert: AssertNode,
+  comment: CommentNode,
+  group: GroupNode,
+  serverTrigger: ServerTriggerNode,
+  serverResponse: ServerResponseNode,
 };
 
 const initialNodes: Node[] = [];
 
-const NODE_TYPES: NodeType[] = [
-  // ... existing nodes
-  {
-    type: "capture",
-    label: "Capture Value",
-    data: { path: "", variable: "" }
-  },
-  // ... existing nodes
-  {
-    type: "loop",
-    label: "Loop (ForEach)",
-    data: { input: [] }
-  },
-  {
-    type: "httpRequest",
-    label: "HTTP Request",
-    data: {
-      method: "GET",
-      endpoint: "https://dummyjson.com/quotes/random",
-      params: {},
-      body: {},
-      headers: {},
-      onSave: (id: string, newData: any) => console.log(id, newData),
-    },
-  },
-  {
-    type: "start",
-    label: "Start Flow",
-    data: { label: "Start" }
-  },
-  {
-    type: "response",
-    label: "Response Display",
-    data: {
-      status: 200,
-      response: { message: "Waiting for response..." },
-    },
-  },
-  {
-    type: "valueselector",
-    label: "Value Selector",
-    data: {
-      selectedValue: "",
-    },
-  },
-  {
-    type: "condition",
-    label: "Conditional Logic",
-    data: {
-      input: ""
-    }
-  },
-  {
-    type: "debug",
-    label: "Debug Node",
-    data: {
-      input: ""
-    }
-  },
-  { type: "input", label: "Input", data: { key: "", value: "", type: "string" } },
-  { type: "output", label: "Output", data: { label: "End" } },
-  { type: "display", label: "Display", data: { input: "Waiting for data..." } },
-  { type: "tabulize", label: "Tabulize", data: { input: [] } },
-  { type: "caseSuccess", label: "Case Success", data: {} },
-  { type: "caseFail", label: "Case Fail", data: {} },
-  { type: "mapper", label: "Value Mapper", data: { mapping: {}, fallback: "Unknown" } },
-  { type: "counter", label: "Variable Op", data: { variable: "counter", operation: "increment", amount: 1 } },
-];
-
 export default function ApiFlow() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [variables, setVariables] = useState<Record<string, any>>({});
-  const [selectedNode, setSelectedNode] = useState<string | null>(null);
-  const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+  const [variables] = useState<Record<string, any>>({});
+
+  const onLoadFlow = useCallback(async (path: string) => {
+    try {
+      const flow = await invoke<any>("load_flow", { path });
+      if (flow && flow.nodes && flow.edges) {
+        setNodes(flow.nodes);
+        setEdges(flow.edges);
+      }
+    } catch (e) {
+      console.error("Failed to load flow:", e);
+    }
+  }, [setNodes, setEdges]);
 
   const onConnect = useCallback(
-    (params: Connection) => {
-      const { source, target } = params;
-      if (source && target) {
-        setEdges((eds) => {
-          return addEdge(
-            {
-              ...params,
-              style: { stroke: params.sourceHandle === "success" ? "#00cc66" : "#ff4444" },
-            },
-            eds
-          );
-        });
-      }
-    },
+    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
     [setEdges]
   );
 
-
-  // Removed manual onContextMenu handler using menuPosition
-
-  const onNodeSave = useCallback((id: string, newData: any) => {
-    setNodes((nds) =>
-      nds.map((node) =>
-        node.id === id ? { ...node, data: { ...newData, onSave: onNodeSave } } : node
-      )
-    );
+  const addNode = useCallback((type: string, data?: any) => {
+    const id = `${type}-${Date.now()}`;
+    const newNode: Node = {
+      id,
+      type,
+      position: { x: Math.random() * 400, y: Math.random() * 400 },
+      data: data || {},
+    };
+    setNodes((nds) => nds.concat(newNode));
   }, [setNodes]);
 
-  const addNode = useCallback(
-    (type: string) => {
-      const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
-      const position = reactFlowInstance?.project({
-        x: (reactFlowBounds?.width || 500) / 2,
-        y: (reactFlowBounds?.height || 500) / 2,
-      }) || { x: 100, y: 100 };
+  const deleteSelected = useCallback(() => {
+    setNodes((nds) => nds.filter((node) => !node.selected));
+    setEdges((eds) => eds.filter((edge) => !edge.selected));
+  }, [setNodes, setEdges]);
 
-      const nodeType = NODE_TYPES.find((t) => t.type === type);
-      if (!nodeType) return;
-
-
-      const newNode = {
-        id: `node_${Date.now()}`,
-        type: nodeType.type,
-        position: position,
-        data: {
-          ...nodeType.data,
-          onSave: onNodeSave,
-        },
-      };
-
-      setNodes((nds) => [...nds, newNode]);
-    },
-    [reactFlowInstance, setNodes, onNodeSave]
-  );
-  const mousePosRef = useRef({ x: 0, y: 0 });
-
-  const deleteNode = useCallback(
-    (id: string) => {
-      setNodes((nds) => nds.filter((node) => node.id !== id));
-      setEdges((eds) =>
-        eds.filter((edge) => edge.source !== id && edge.target !== id)
-      );
-    },
-    [setNodes, setEdges]
-  );
-  const loadFlowFromFile = async (path: string) => {
-    try {
-      const flow: any = await invoke("load_flow", { path });
-      const nodesWithHandlers = (flow.nodes || []).map((node: any) => ({
-        ...node,
-        data: {
-          ...node.data,
-          onSave: onNodeSave
-        }
-      }));
-      setNodes(nodesWithHandlers);
-      setEdges(flow.edges || []);
-    } catch (error) {
-      console.error("Load failed:", error);
-      alert("Load failed: " + error);
+  const clearAll = useCallback(() => {
+    if (window.confirm("Are you sure you want to clear the entire flow?")) {
+      setNodes([]);
+      setEdges([]);
     }
-  };
+  }, [setNodes, setEdges]);
 
   return (
-    <div className="flex w-full h-screen bg-white dark:bg-gray-950">
-      <FilesSidebar onLoadFlow={loadFlowFromFile} variables={variables} />
-      <div className="flex-1 h-full relative" ref={reactFlowWrapper}>
-        <ContextMenu>
-          <ContextMenuTrigger
-            onContextMenuCapture={(e) => {
-              // ...
-              mousePosRef.current = { x: e.clientX, y: e.clientY };
-            }}
-          >
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              onConnect={onConnect}
-              nodeTypes={nodeTypes}
-              onInit={setReactFlowInstance}
-              onNodeContextMenu={(_, node) => {
-                setSelectedNode(node.id);
-              }}
-              onPaneContextMenu={() => {
-                setSelectedNode(null);
-              }}
-              connectionMode={ConnectionMode.Strict}
-              fitView
-            >
-              <div className="fixed z-50 flex items-center justify-center bottom-0 w-full pointer-events-none">
-                <div className="pointer-events-auto flex gap-2 items-center mb-4">
-                  <FlowControlsDock onExecutionComplete={setVariables} />
-                </div>
+    <ReactFlowProvider>
+      <div className="w-full h-screen flex overflow-hidden">
+        <FilesSidebar onLoadFlow={onLoadFlow} variables={variables} />
+        <div className="flex-grow h-full relative overflow-hidden">
+          <ContextMenu>
+            <ContextMenuTrigger asChild>
+              <div className="w-full h-full">
+                <ReactFlow
+                  nodes={nodes}
+                  edges={edges}
+                  onNodesChange={onNodesChange}
+                  onEdgesChange={onEdgesChange}
+                  onConnect={onConnect}
+                  nodeTypes={nodeTypes}
+                  connectionMode={ConnectionMode.Loose}
+                  fitView
+                  className="bg-gray-50 dark:bg-black"
+                >
+                  <Background color="#999" gap={16} />
+                  <Panel position="bottom-center" className="pb-4">
+                    <FlowControlsDock />
+                  </Panel>
+                </ReactFlow>
               </div>
-              <Background gap={12} size={2} color="purple" className="bg-white dark:bg-gray-800" />
+            </ContextMenuTrigger>
 
-            </ReactFlow>
-          </ContextMenuTrigger>
+            <ContextMenuContent className="w-56 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800">
+              {/* Documentation Nodes */}
+              <ContextMenuSub>
+                <ContextMenuSubTrigger inset>Documentation</ContextMenuSubTrigger>
+                <ContextMenuSubContent className="w-48">
+                  <ContextMenuItem inset onClick={() => addNode('comment')}>Note / Comment</ContextMenuItem>
+                  <ContextMenuItem inset onClick={() => addNode('group')}>Visual Group</ContextMenuItem>
+                </ContextMenuSubContent>
+              </ContextMenuSub>
 
-          <ContextMenuContent className="w-64">
-            {selectedNode ? (
-              <ContextMenuItem
-                inset
-                onClick={() => deleteNode(selectedNode)}
-                className="text-red-500 focus:text-red-500"
-              >
-                <X className="mr-2 h-4 w-4" />
-                Delete Node
+              {/* Logic Nodes */}
+              <ContextMenuSub>
+                <ContextMenuSubTrigger inset>Logic</ContextMenuSubTrigger>
+                <ContextMenuSubContent className="w-48">
+                  <ContextMenuItem inset onClick={() => addNode('condition')}>Conditional</ContextMenuItem>
+                  <ContextMenuItem inset onClick={() => addNode('assert')}>Assert (Test)</ContextMenuItem>
+                  <ContextMenuItem inset onClick={() => addNode('loop')}>Loop (ForEach)</ContextMenuItem>
+                </ContextMenuSubContent>
+              </ContextMenuSub>
+
+              {/* IO Nodes */}
+              <ContextMenuSub>
+                <ContextMenuSubTrigger inset>I/O & Display</ContextMenuSubTrigger>
+                <ContextMenuSubContent className="w-48">
+                  <ContextMenuItem inset onClick={() => addNode('start')}>Start Flow</ContextMenuItem>
+                  <ContextMenuItem inset onClick={() => addNode('input')}>Input Block</ContextMenuItem>
+                  <ContextMenuItem inset onClick={() => addNode('output')}>Output Block</ContextMenuItem>
+                  <ContextMenuItem inset onClick={() => addNode('carousel')}>Carousel Display</ContextMenuItem>
+                </ContextMenuSubContent>
+              </ContextMenuSub>
+
+              {/* Data Nodes */}
+              <ContextMenuSub>
+                <ContextMenuSubTrigger inset>Data & Variables</ContextMenuSubTrigger>
+                <ContextMenuSubContent className="w-48">
+                  <ContextMenuItem inset onClick={() => addNode('capture')}>Capture Block</ContextMenuItem>
+                  <ContextMenuItem inset onClick={() => addNode('scraper')}>DOM Scraper</ContextMenuItem>
+                  <ContextMenuItem inset onClick={() => addNode('filter', { property: "", condition: "equals", value: "" })}>Filter (Array/Item)</ContextMenuItem>
+                  <ContextMenuItem inset onClick={() => addNode('arrayMap', { path: "" })}>Array Map (Extract)</ContextMenuItem>
+                  <ContextMenuItem inset onClick={() => addNode('mapper')}>Value Mapper</ContextMenuItem>
+                  <ContextMenuItem inset onClick={() => addNode('counter')}>Variable Op</ContextMenuItem>
+                </ContextMenuSubContent>
+              </ContextMenuSub>
+
+              {/* Network Nodes */}
+              <ContextMenuSub>
+                <ContextMenuSubTrigger inset>Network</ContextMenuSubTrigger>
+                <ContextMenuSubContent className="w-48">
+                  <ContextMenuItem inset onClick={() => addNode('httpRequest')}>HTTP Request</ContextMenuItem>
+                  <ContextMenuItem inset onClick={() => addNode('serverTrigger')}>Server Trigger</ContextMenuItem>
+                  <ContextMenuItem inset onClick={() => addNode('serverResponse')}>Server Response</ContextMenuItem>
+                </ContextMenuSubContent>
+              </ContextMenuSub>
+
+              <ContextMenuSub>
+                <ContextMenuSubTrigger inset>Debug</ContextMenuSubTrigger>
+                <ContextMenuSubContent className="w-48">
+                  <ContextMenuItem inset onClick={() => addNode('debug')}>Debug Node</ContextMenuItem>
+                  <ContextMenuItem inset onClick={() => addNode('response')}>Response Display</ContextMenuItem>
+                </ContextMenuSubContent>
+              </ContextMenuSub>
+
+              <ContextMenuSeparator className="bg-gray-100 dark:bg-gray-800" />
+
+              <ContextMenuItem inset onClick={deleteSelected} className="text-red-600 dark:text-red-400 focus:text-red-700 dark:focus:text-red-300">
+                Delete Selected
               </ContextMenuItem>
-            ) : (
-              <>
-                {/* Logic Nodes */}
-                <ContextMenuSub>
-                  <ContextMenuSubTrigger inset>Logic</ContextMenuSubTrigger>
-                  <ContextMenuSubContent className="w-48 bg-white dark:bg-gray-900">
-                    <ContextMenuItem inset onClick={() => addNode('condition')}>Conditional</ContextMenuItem>
-                    <ContextMenuItem inset onClick={() => addNode('loop')}>Loop (ForEach)</ContextMenuItem>
-                    <ContextMenuItem inset onClick={() => addNode('caseSuccess')}>Case Success</ContextMenuItem>
-                    <ContextMenuItem inset onClick={() => addNode('caseFail')}>Case Fail</ContextMenuItem>
-                  </ContextMenuSubContent>
-                </ContextMenuSub>
-
-                {/* IO Nodes */}
-                <ContextMenuSub>
-                  <ContextMenuSubTrigger inset>I/O & Display</ContextMenuSubTrigger>
-                  <ContextMenuSubContent className="w-48 bg-white dark:bg-gray-900">
-                    <ContextMenuItem inset onClick={() => addNode('start')}>Start Flow</ContextMenuItem>
-                    <ContextMenuItem inset onClick={() => addNode('valueselector')}>Value Selector</ContextMenuItem>
-                    <ContextMenuItem inset onClick={() => addNode('input')}>Input Block</ContextMenuItem>
-                    <ContextMenuItem inset onClick={() => addNode('output')}>Output Block</ContextMenuItem>
-                    <ContextMenuItem inset onClick={() => addNode('display')}>Display Block</ContextMenuItem>
-                    <ContextMenuItem inset onClick={() => addNode('tabulize')}>Tabulize</ContextMenuItem>
-                  </ContextMenuSubContent>
-                </ContextMenuSub>
-
-                {/* Data Nodes */}
-                <ContextMenuSub>
-                  <ContextMenuSubTrigger inset>Data & Variables</ContextMenuSubTrigger>
-                  <ContextMenuSubContent className="w-48 bg-white dark:bg-gray-900">
-                    <ContextMenuItem inset onClick={() => addNode('capture')}>Capture Block</ContextMenuItem>
-                    <ContextMenuItem inset onClick={() => addNode('mapper')}>Value Mapper</ContextMenuItem>
-                    <ContextMenuItem inset onClick={() => addNode('counter')}>Variable Op</ContextMenuItem>
-                  </ContextMenuSubContent>
-                </ContextMenuSub>
-
-                {/* Network Nodes */}
-                <ContextMenuSub>
-                  <ContextMenuSubTrigger inset>Network</ContextMenuSubTrigger>
-                  <ContextMenuSubContent className="w-48">
-                    <ContextMenuItem inset onClick={() => addNode('httpRequest')}>HTTP Request</ContextMenuItem>
-                  </ContextMenuSubContent>
-                </ContextMenuSub>
-
-                <ContextMenuSub>
-                  <ContextMenuSubTrigger inset>Debug</ContextMenuSubTrigger>
-                  <ContextMenuSubContent className="w-48">
-                    <ContextMenuItem inset onClick={() => addNode('debug')}>Debug Node</ContextMenuItem>
-                    <ContextMenuItem inset onClick={() => addNode('response')}>Response Display</ContextMenuItem>
-                  </ContextMenuSubContent>
-                </ContextMenuSub>
-              </>
-            )}
-          </ContextMenuContent>
-        </ContextMenu>
+              <ContextMenuItem inset onClick={clearAll} className="text-red-600 dark:text-red-400 focus:text-red-700 dark:focus:text-red-300">
+                Clear All Flow
+              </ContextMenuItem>
+            </ContextMenuContent>
+          </ContextMenu>
+        </div>
       </div>
-    </div>
+    </ReactFlowProvider>
   );
 }
-
