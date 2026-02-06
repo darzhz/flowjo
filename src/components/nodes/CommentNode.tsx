@@ -1,5 +1,5 @@
 import { NodeResizer } from "reactflow";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export default function CommentNode({ id, data, selected }: { id: string, data: any, selected: boolean }) {
     const [text, setText] = useState(data.text || "");
