@@ -48,4 +48,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          args: --dry-run
+          tagName: ${{ github.ref_name }}
+          releaseName: ${{ github.ref_name }}
+          generateReleaseNotes: true
